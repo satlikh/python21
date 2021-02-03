@@ -4,6 +4,7 @@ from matplotlib.collections import LineCollection
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import dijkstra
 import time
+from scipy.spatial import cKDTree
 
 
 def read_coordinate_file(filename_fun):
@@ -185,10 +186,30 @@ def plot_points(coord_list, indices, path):
     # plt.show()
 
 
+"""Question 10"""
+
+
+def construct_fast_graph_connections(coord_list_fun, radius_fun):
+    coord_tree = cKDTree(coord_list_fun)
+    all_pairs = coord_tree.query_ball_tree(coord_tree, radius_fun)  # creates a list of lists with indices' neighbors
+    indices_fun = []
+
+    for i in range(len(all_pairs)):
+        for j in all_pairs[i]:
+            if i == j:
+                continue
+            indices_fun.append([i, j])  # transfers the list of lists to (m, 2) shape
+    indices_fun = np.array(indices_fun)
+    coord_dist = np.transpose([coord_list_fun[indices_fun[:, 0], 0]-coord_list_fun[indices_fun[:, 1], 0],
+                               coord_list_fun[indices_fun[:, 0], 1]-coord_list_fun[indices_fun[:, 1], 1]])
+    # creates a list with the vectors-distances between the cities in indices
+    distance_fun = np.linalg.norm(coord_dist, axis=1)  # calculates the distance
+    return indices_fun, np.transpose(distance_fun)
+
 """Question 9"""
 # filename = 'SampleCoordinates.txt'
-# filename = 'HungaryCities.txt'
-filename = 'GermanyCities.txt'
+filename = 'HungaryCities.txt'
+# filename = 'GermanyCities.txt'
 
 read_start = time.time()
 coord_list = read_coordinate_file(filename)
@@ -201,7 +222,8 @@ var = {'SampleCoordinates.txt': dict(radius=0.08, start_city=0, end_city=5),
 city = var[filename]  # retrieves the variable for the radius, start- and end-city for the files
 
 const_con_start = time.time()
-indices, distance = construct_graph_connections(coord_list, city['radius'])
+# indices, distance = construct_graph_connections(coord_list, city['radius'])
+indices, distance = construct_fast_graph_connections(coord_list, city['radius'])
 const_con_stop = time.time()
 print('Constructing connection points time:', const_con_stop - const_con_start, 'seconds')
 
@@ -223,3 +245,8 @@ plot_points(coord_list, indices, shortest_path)
 plot_stop = time.time()
 print('Plotting time:', plot_stop - plot_start, ' seconds')
 plt.show()
+
+# const_fast_con_start = time.time()
+# indices_fast, distance_fast = construct_fast_graph_connections(coord_list, city['radius'])
+# const_fast_con_stop = time.time()
+# print('Constructing fast connection points time:', const_fast_con_stop - const_fast_con_start, 'seconds')
