@@ -165,7 +165,7 @@ def plot_points(coord_list, indices, path):
     ax.add_collection(line_segments)
     # ====================================================================
     # Plotting path
-    if path != None:
+    if path is not None:
         shortest_path_length = len(path)  # number of nodes on shortest path
         shortest_path_lines = []
         for i in range(shortest_path_length - 1):
@@ -207,14 +207,16 @@ def construct_fast_graph_connections(coord_list_fun, radius_fun):
     return indices_fun, np.transpose(distance_fun)
 
 """Question 9"""
+
+
 # filename = 'SampleCoordinates.txt'
-filename = 'HungaryCities.txt'
-# filename = 'GermanyCities.txt'
+# filename = 'HungaryCities.txt'
+filename = 'GermanyCities.txt'
 
 read_start = time.time()
 coord_list = read_coordinate_file(filename)
 read_stop = time.time()
-print('reading time:', read_stop - read_start, 'seconds')
+print('read_coordinate_file time:', read_stop - read_start, 'seconds')
 
 var = {'SampleCoordinates.txt': dict(radius=0.08, start_city=0, end_city=5),
        'HungaryCities.txt': dict(radius=0.005, start_city=311, end_city=702),
@@ -222,31 +224,41 @@ var = {'SampleCoordinates.txt': dict(radius=0.08, start_city=0, end_city=5),
 city = var[filename]  # retrieves the variable for the radius, start- and end-city for the files
 
 const_con_start = time.time()
-# indices, distance = construct_graph_connections(coord_list, city['radius'])
-indices, distance = construct_fast_graph_connections(coord_list, city['radius'])
+indices, distance = construct_graph_connections(coord_list, city['radius'])
 const_con_stop = time.time()
-print('Constructing connection points time:', const_con_stop - const_con_start, 'seconds')
+print('construct_graph_connections time:', const_con_stop - const_con_start, 'seconds')
+
+# const_con_start = time.time()
+# indices, distance = construct_fast_graph_connections(coord_list, city['radius'])
+# const_con_stop = time.time()
+# print('construct_fast_graph_connections time:', const_con_stop - const_con_start, 'seconds')
 
 n_city = coord_list.shape[0]
 
 const_graph_start = time.time()
 city_graph = construct_graph(indices, distance, n_city)
 const_graph_stop = time.time()
-print('Construction graph time:', const_graph_stop - const_graph_start,' seconds')
+print('construct_graph time:', const_graph_stop - const_graph_start, ' seconds')
 
 Q67_start = time.time()
 dist_matrix, predecessors = find_shortest_paths(city_graph, start=city['start_city'])
 shortest_path = compute_path(predecessors, city['start_city'], city['end_city'])
+total_distance = dist_matrix[city['end_city']]
 Q67_stop = time.time()
-print('Question 6 & 7 time:', Q67_stop - Q67_start, ' seconds')
+print('Task 6+7 time:', Q67_stop - Q67_start, ' seconds')
+
+
+entire_program_stop = time.time()
+time_entire_program = entire_program_stop-read_start
+print(f'The entire program excluding plotting took {time_entire_program} seconds')
+
 
 plot_start = time.time()
 plot_points(coord_list, indices, shortest_path)
 plot_stop = time.time()
-print('Plotting time:', plot_stop - plot_start, ' seconds')
+print('plot_points time:', plot_stop - plot_start, ' seconds')
 plt.show()
 
-# const_fast_con_start = time.time()
-# indices_fast, distance_fast = construct_fast_graph_connections(coord_list, city['radius'])
-# const_fast_con_stop = time.time()
-# print('Constructing fast connection points time:', const_fast_con_stop - const_fast_con_start, 'seconds')
+print(f'Shortest path from {city["start_city"]} to {city["end_city"]} in {filename.strip(".txt")} is: {shortest_path}')
+print(f'Total distance: {total_distance}')
+
