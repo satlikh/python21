@@ -1,0 +1,16 @@
+from ca2 import *
+
+deck = StandardDeck()
+deck.shuffle()
+deck.shuffle()
+deck.shuffle()
+deck.shuffle()
+deck.shuffle()
+hand = Hand()
+hand.new_card(deck.take_card())
+hand.new_card(deck.take_card())
+hand.new_card(deck.take_card())
+hand.new_card(deck.take_card())
+hand.new_card(deck.take_card())
+hand.new_card(deck.take_card())
+hand.show_hand()
