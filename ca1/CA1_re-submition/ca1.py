@@ -8,6 +8,7 @@ from matplotlib.collections import LineCollection
 from scipy import spatial
 import time
 
+
 # Task 1 ==================================================
 def read_coordinate_file(filename_fun):
     """
@@ -334,7 +335,7 @@ t_str_plot_points = '{:.3f}'.format(t_plot_points)
 t_str_construct_fast_graph_connections = '{:.3f}'.format(t_construct_fast_graph_connections)
 t_str_total = '{:.3f}'.format(t_total)
 
-# from tabletext import to_text
+# from tabletext import to_text # for nicer print
 a = [["function ", "reference time (s)", "time (s)"],
      ["read_coordinate_file", "0.030", t_str_read_coordinate_file],
      ["construct_graph_connections", "70.000", t_str_construct_graph_connections],
@@ -344,6 +345,8 @@ a = [["function ", "reference time (s)", "time (s)"],
      ["construct_fast_graph_connections", "0.300", t_str_construct_fast_graph_connections],
      ["Running the entire program using the fast version, excluding plotting", "1.000", t_str_total]]
 # print(to_text(a, header=True, header_corners="╒╤╕╞╪╡"))
+for timing in a:
+    print(timing)
 
 
 # Task: Final Part =================================================
@@ -380,6 +383,7 @@ def plot_and_compute_path(filename, radius, start_node, end_node):
     print("The shortest distance between {p1} and {p2} is:\n{dist}\n\n".format(p1=start_node,
                                                                                p2=end_node,
                                                                                dist=dist_matrix[end_node]))
+
 
 # Task: Final Part =================================================
 test_set = [['SampleCoordinates.txt', 0.08, 0, 5],
