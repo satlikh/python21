@@ -43,7 +43,7 @@ def test_hand():
     h.add_card(d.draw())
     assert len(h.cards) == 5
 
-    h.sort()
+    h.sort_cards()
     for i in range(3):
         assert h.cards[i] < h.cards[i+1] or h.cards[i] == h.cards[i+1]
 
