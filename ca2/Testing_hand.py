@@ -16,20 +16,21 @@ hand.add_card(deck.draw())
 # hand.show_hand()
 
 def test_straight_flush():
-    deck1 = StandardDeck()
-    hand1 = Hand()
-    hand1.add_card(deck1.draw())
-    hand1.add_card(deck1.draw())
-    hand1.add_card(deck1.draw())
-    hand1.add_card(deck1.draw())
-    hand1.add_card(deck1.draw())
-    hand1.add_card(deck1.draw())
-    check_hand = PokerHand(hand1.cards)
+    # deck1 = StandardDeck()
+    hand = Hand()
+    hand.add_card(AceCard(Suit.Spades))
+    hand.add_card(NumberedCard(2, Suit.Hearts))
+    hand.add_card(NumberedCard(3, Suit.Hearts))
+    hand.add_card(NumberedCard(4, Suit.Hearts))
+    hand.add_card(NumberedCard(5, Suit.Hearts))
+    # hand.add_card(NumberedCard(7, Suit.Spades))
+    hand.add_card(AceCard(Suit.Hearts))
+    check_hand = PokerHand(hand.cards)
     assert check_hand.points == 9
     print('Straight-flush gives:', check_hand.points,'points with hand:')
-    for i in check_hand.cards:
+    for i in check_hand.best_cards:
         print(i, end=',')
-
+    print('\n')
 
 def test_pair():
     deck = StandardDeck()
@@ -42,8 +43,9 @@ def test_pair():
     check_hand = PokerHand(hand.cards)
     assert check_hand.points == 2
     print('Pair gives:', check_hand.points,'points with hand:')
-    for i in check_hand.cards:
+    for i in check_hand.best_cards:
         print(i, end=',')
+    print('\n')
 
 
 def test_two_pairs():
@@ -58,9 +60,9 @@ def test_two_pairs():
     check_hand = PokerHand(hand.cards)
     assert check_hand.points == 3
     print('Two pair gives:', check_hand.points,'points with hand:')
-    for i in check_hand.cards:
+    for i in check_hand.best_cards:
         print(i, end=',')
-
+    print('\n')
 
 def test_three():
     deck = StandardDeck()
@@ -74,8 +76,9 @@ def test_three():
     check_hand = PokerHand(hand.cards)
     assert check_hand.points == 4
     print('Three of a kind gives:', check_hand.points, 'points with hand:')
-    for i in check_hand.cards:
+    for i in check_hand.best_cards:
         print(i, end=',')
+    print('\n')
 
 def test_full_house():
     deck = StandardDeck()
@@ -91,8 +94,9 @@ def test_full_house():
     check_hand = PokerHand(hand.cards)
     assert check_hand.points == 7
     print('Full house gives:', check_hand.points, 'points with hand:')
-    for i in check_hand.cards:
+    for i in check_hand.best_cards:
         print(i, end=',')
+    print('\n')
 
 def test_four():
     deck = StandardDeck()
@@ -106,9 +110,9 @@ def test_four():
     check_hand = PokerHand(hand.cards)
     assert check_hand.points == 8
     print('Four of a kind gives:', check_hand.points, 'points with hand:')
-    for i in check_hand.cards:
+    for i in check_hand.best_cards:
         print(i, end=',')
-
+    print('\n')
 
 def test_straight():
     deck = StandardDeck()
@@ -122,9 +126,9 @@ def test_straight():
     check_hand = PokerHand(hand.cards)
     assert check_hand.points == 5
     print('Straight gives:', check_hand.points, 'points with hand:')
-    for i in check_hand.cards:
+    for i in check_hand.best_cards:
         print(i, end=',')
-
+    print('\n')
 
 def test_flush():
     deck = StandardDeck()
@@ -138,9 +142,9 @@ def test_flush():
     check_hand = PokerHand(hand.cards)
     assert check_hand.points == 6
     print('Flush:', check_hand.points, 'points with hand:')
-    for i in check_hand.cards:
+    for i in check_hand.best_cards:
         print(i, end=',')
-
+    print('\n')
 
 print('\n------one pair-----')
 test_pair()
@@ -158,3 +162,4 @@ print('\n------Four of a kind-----')
 test_four()
 print('\n------Straight flush-----')
 test_straight_flush()
+print('\n')

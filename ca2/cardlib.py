@@ -63,9 +63,12 @@ class KingCard(PlayingCard):
 
 
 class AceCard(PlayingCard):
-    def __init__(self, suit: Suit):
+    def __init__(self, suit: Suit, first=False):
+        if first:
+            self.value = 1
+        else:
+            self.value = 14
         self.suit = suit
-        self.value = 14
 
     def get_value(self):
         print(self.value)
@@ -108,108 +111,156 @@ class Hand:
         print(hand)
 
     def best_poker_hand(self, cards=[]):
-        self.cards.append(cards)
-        PokerHand(self.cards)
-    #
+        poker_cards = self.cards.copy()
+        if cards:
+            if len(cards) > 1:
+                poker_cards.extend(cards)
+            else:
+                poker_cards.append(cards)
+        return PokerHand(poker_cards)
 
 
 class PokerHand:
     def __init__(self, cards):
         self.cards = cards
+        self.best_cards = []
         values = []
         for i in self.cards:
+            print(i)
             values.append(i.value)
         self.__duplicate_values()
-        self.__check_suits()
-        self.__check_straight()
-        if self.flush and self._straight:
+        self._straight = self.__check_straight()
+        self._straight_flush = False
+        self.__check_flush()
+        if self._straight_flush:
+            self.__best_cards(self._straight_cards)
             self.points = 9
-        elif self.points < 7 and (self.flush or self._straight):
-            if self.flush:
+        elif self.points < 7 and (self._flush or self._straight):
+            if self._flush:
+                self.__best_cards(self.flush_cards)
                 self.points = 6
             else:
                 self.points = 5
-        # add the high cards an spit out cards
+                self.__best_cards(self._straight_cards)
+        else:
+            self.__best_cards(self._duplicate_values)
+
+    def __lt__(self, other):
+        if self.points != other.points:
+            return self.points < other.points
+        elif max(self.other_cards) != max(other.other_cards):
+            return max(self.other_cards) < max(other.other_cards)
+
+    def __best_cards(self, category_cards=None):
+        other_cards = self.cards.copy()
+        indices = []
+        if category_cards:
+            for i, elem in enumerate(other_cards):
+                for j in category_cards:
+                    if (j == elem) and (j.suit.value == elem.suit.value):
+                        indices.append(i)
+        self.other_cards = list(np.delete(other_cards, indices))
+        self.other_cards.sort(reverse=True)
+        category_cards.extend(self.other_cards)
+        self.best_cards = category_cards[:5].copy()
 
     def __duplicate_values(self):
         unique, counts = np.unique(self.cards, return_counts=True)
-        self.duplicate_values = []
+        self._duplicate_values = []
         if any(counts == 2) & any(counts == 3):
             self.points = 7
             full_house = [max(unique[counts == 2]), max(unique[counts == 3])]
             print(full_house)
-            self.duplicate_values = self.__cards_in_category(full_house)
+            self._duplicate_values = self.__cards_in_category(full_house)
         elif any(counts == 2):
             if len(counts[counts == 2]) > 1:
                 two_pair = unique[counts == 2]
-                self.duplicate_values = self.__cards_in_category(two_pair)
+                self._duplicate_values = self.__cards_in_category(two_pair)
                 self.points = 3
             else:
                 pair = unique[counts == 2]
-                self.duplicate_values = self.__cards_in_category(pair)
+                self._duplicate_values = self.__cards_in_category(pair)
                 self.points = 2
         elif any(counts == 3):
             three_of_a_kind = unique[counts == 3]
-            self.duplicate_values = self.__cards_in_category(three_of_a_kind)
+            self._duplicate_values = self.__cards_in_category(three_of_a_kind)
             self.points = 4
         elif any(counts == 4):
             four_of_a_kind = unique[counts == 2]
-            self.duplicate_values = self.__cards_in_category(four_of_a_kind)
+            self._duplicate_values = self.__cards_in_category(four_of_a_kind)
             self.points = 8
         else:
             self.points = 1
         # duplicate_values = np.array(values)[values == unique[counts == max(counts)]]
         #duplicate_values = np.array(self.cards)[values == unique[counts == max(counts)]]
-        #self.duplicate_values = list(duplicate_values)
-        # self.duplicate_values = []
+        #self._duplicate_values = list(duplicate_values)
+        # self._duplicate_values = []
         # for elem in values:
         #     if values.count(elem) == 2:
-        #         self.duplicate_values.append(2)
+        #         self._duplicate_values.append(2)
         #         print('pair')
         #     elif values.count(elem) == 3:
-        #         self.duplicate_values.append(3)
+        #         self._duplicate_values.append(3)
         #         print('three of a kind')
         #     elif values.count(elem) == 4:
-        #         self.duplicate_values.append(4)
+        #         self._duplicate_values.append(4)
         #         print('four of a kind')
-        # if not self.duplicate_values:  # just to see if it's working
+        # if not self._duplicate_values:  # just to see if it's working
         #     print('No duplicates')
-        # return self.duplicate_values
+        # return self._duplicate_values
 
-    def __check_suits(self):
+    def __check_flush(self, suit_cards=None):
+        if not suit_cards:
+            suit_cards = self.cards.copy()
         suits = []
-        for i in self.cards:
-            suits.append(i.suit.name)
-        self.flush = False
-        for elem in self.cards:
-            if suits.count(elem.suit.name) >= 5:  # add 6 points
-                self.flush = True
-        return self.flush
+        for i in suit_cards:
+            suits.append(i.suit.value)
+        self._flush = False
+        un, co = np.unique(suits, return_counts=True)
+        if any(co >= 5):
+            self.flush_cards = []
+            self._flush = True
+            for i, color in enumerate(suits):
+                if color == un[co >= 5]:
+                    self.flush_cards.append(suit_cards[i])
+            self._straight_flush = self.__check_straight(self.flush_cards)
 
-    def __check_straight(self):
-        #  values.sort()
-        # straight = 0
-        self.cards.sort()
-        self._straight_hand = []
-        self._straight_hand.append(self.cards[0])
-        self._straight = False
+
+    def __check_straight(self, straight_cards=None):
+        if not straight_cards:
+            straight_cards = self.cards.copy()
+        cards = []
+
+        if (AceCard(Suit) in straight_cards) and (NumberedCard(2, Suit) in straight_cards):
+            suit_of_acecard = straight_cards[straight_cards.index(AceCard(Suit))].suit
+            cards.append(AceCard(suit_of_acecard, first=True))
+            straight_cards.sort()
+            if KingCard(Suit) not in straight_cards:
+                del (straight_cards[-1])  # removes AceCard with value 14
+        cards.extend(straight_cards)
+        cards.sort()
+        self._straight_cards = []
+        self._straight_cards.append(cards[0])
+        straight = False
         # for i in range(len(values)-1):
-        for i in range(len(self.cards) - 1):
-            if self.cards[i].value + 1 == self.cards[i + 1].value:
+        for i in range(len(cards) - 1):
+            if cards[i].value + 1 == cards[i + 1].value:
                 # if values[i] + 1 == values[i + 1]:
                 #    straight += 1
-                self._straight_hand.append(self.cards[i+1])
-                # print(self._straight_hand,'----',len(self._straight_hand))
+                self._straight_cards.append(cards[i+1])
+                # print(self._straight_cards,'----',len(self._straight_cards))
             else:
                 #    straight = 0
                 # in case we have 5 (straight) in row but 6th is not
-                if len(self._straight_hand) >= 5:
-                    self._straight = True
+                if len(self._straight_cards) >= 5:
+                    straight = True
                     break
-                self._straight_hand = []
-                self._straight_hand.append(self.cards[i])
-        if len(self._straight_hand) >= 5:
-            self._straight = True
+                self._straight_cards = []
+                self._straight_cards.append(cards[i])
+        if len(self._straight_cards) >= 5:
+            straight = True
+            #self._straight_flush = self.__check_suits(self._straight_cards)
+        return straight
 
     def __cards_in_category(self, category_card):
         cards_list = []
