@@ -146,6 +146,41 @@ def test_flush():
         print(i, end=',')
     print('\n')
 
+
+def test_PokerHand_order():
+    hand1 = Hand([NumberedCard(3, Suit.Spades),
+                  NumberedCard(3, Suit.Hearts),
+                  NumberedCard(5, Suit.Diamonds),
+                  NumberedCard(5, Suit.Clubs),
+                  NumberedCard(10, Suit.Spades)])
+
+    hand2 = Hand([NumberedCard(4, Suit.Diamonds),
+                  NumberedCard(4, Suit.Hearts),
+                  NumberedCard(5, Suit.Spades),
+                  NumberedCard(5, Suit.Hearts),
+                  NumberedCard(9, Suit.Hearts)])
+
+    hand3 = Hand([NumberedCard(4, Suit.Diamonds),
+                  NumberedCard(4, Suit.Hearts),
+                  NumberedCard(5, Suit.Spades),
+                  NumberedCard(5, Suit.Hearts),
+                  NumberedCard(10, Suit.Hearts)])
+    hand4 = Hand([NumberedCard(4, Suit.Diamonds),
+                  NumberedCard(4, Suit.Hearts),
+                  NumberedCard(5, Suit.Spades),
+                  NumberedCard(5, Suit.Hearts),
+                  NumberedCard(10, Suit.Hearts)])
+
+    ph1 = PokerHand(hand1.cards)
+    ph2 = PokerHand(hand2.cards)
+    ph3 = PokerHand(hand3.cards)
+    ph4 = PokerHand(hand4.cards)
+
+    assert ph1 < ph2
+    assert ph2 < ph3
+    assert ph3 == ph4
+
+
 print('\n------one pair-----')
 test_pair()
 print('\n------Two pairs-----')

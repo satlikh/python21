@@ -21,7 +21,6 @@ class PlayingCard:
         return "[{}, {}]".format(self.suit.name, self.value)
 
 
-
 class NumberedCard(PlayingCard):
     def __init__(self, value: int, suit: Suit):
         self.value = value
@@ -87,22 +86,30 @@ class Hand:
         self.cards.append(new_card)
 
     def sort_cards(self):
-        # sorted_values = sorted(self.cards, key=lambda x: getattr(x, 'value'))
-        # sorting_suits = [[], [], [], []]
-        # for i in range(len(sorted_values)):
-        #     sorting_suits[sorted_values[i].suit.value - 1].append(sorted_values[i])
-        #
-        # self.cards = [x for i in sorting_suits for x in i]
-        # # above comments are for sorting by suit and value
         self.cards = sorted(self.cards, key=lambda x: getattr(x, 'value'))
 
-    def drop_cards(self, index):
-        # index is given as 0 at the first position
-        dropped_cards = []
-        for i in index:
-            dropped_cards.append(self.cards[i])
-        self.cards = np.delete(self.cards, index)
-        return dropped_cards
+    def sort_cards_by_suit(self):
+        sorted_values = sorted(self.cards, key=lambda x: getattr(x, 'value'))
+        sorting_suits = [[], [], [], []]
+        for i in range(len(sorted_values)):
+            sorting_suits[sorted_values[i].suit.value - 1].append(sorted_values[i])
+        self.cards = [x for i in sorting_suits for x in i]
+        self.cards = sorted(self.cards, key=lambda x: getattr(x, 'value'))
+
+    def drop_cards(self, index=None):
+        try:
+            if type(index) is int:
+                index = [index]
+            # index is given as 0 at the first position
+            dropped_cards = []
+            for i in index:
+                dropped_cards.append(self.cards[i])
+            self.cards = np.delete(self.cards, index)
+            return dropped_cards
+        except TypeError:
+            print('No index was given')
+        except IndexError:
+            print(f'IndexError: Given index is "{index}" while number of cards is {len(self.cards)}')
 
     def show_hand(self):  # change ths to __repr__
         hand = []
@@ -126,7 +133,6 @@ class PokerHand:
         self.best_cards = []
         values = []
         for i in self.cards:
-            print(i)
             values.append(i.value)
         self.__duplicate_values()
         self._straight = self.__check_straight()
@@ -148,8 +154,30 @@ class PokerHand:
     def __lt__(self, other):
         if self.points != other.points:
             return self.points < other.points
-        elif max(self.other_cards) != max(other.other_cards):
-            return max(self.other_cards) < max(other.other_cards)
+
+        else:
+            un_self, co_self = np.unique(self.best_cards, return_counts=True)
+            un_other, co_other = np.unique(other.best_cards, return_counts=True)
+            ind_self = np.array(range(len(un_self)))
+            ind_other = np.array(range(len(un_other)))
+            while any(co_self):
+                next_best_ranked_card_self = max(un_self[co_self == max(co_self)])
+                next_best_ranked_card_other = max(un_other[co_other == max(co_other)])
+                if next_best_ranked_card_self != next_best_ranked_card_other:
+                    return next_best_ranked_card_self < next_best_ranked_card_other
+                else:
+                    remove_index_self = ind_self[un_self == next_best_ranked_card_self]
+                    remove_index_other = ind_other[un_other == next_best_ranked_card_other]
+                    co_self[remove_index_self] = 0
+                    co_other[remove_index_other] = 0
+
+            return False
+
+    def __eq__(self, other):
+        if not (self < other) and not (self > other):
+            return True
+        else:
+            return False
 
     def __best_cards(self, category_cards=None):
         other_cards = self.cards.copy()
@@ -191,23 +219,6 @@ class PokerHand:
             self.points = 8
         else:
             self.points = 1
-        # duplicate_values = np.array(values)[values == unique[counts == max(counts)]]
-        #duplicate_values = np.array(self.cards)[values == unique[counts == max(counts)]]
-        #self._duplicate_values = list(duplicate_values)
-        # self._duplicate_values = []
-        # for elem in values:
-        #     if values.count(elem) == 2:
-        #         self._duplicate_values.append(2)
-        #         print('pair')
-        #     elif values.count(elem) == 3:
-        #         self._duplicate_values.append(3)
-        #         print('three of a kind')
-        #     elif values.count(elem) == 4:
-        #         self._duplicate_values.append(4)
-        #         print('four of a kind')
-        # if not self._duplicate_values:  # just to see if it's working
-        #     print('No duplicates')
-        # return self._duplicate_values
 
     def __check_flush(self, suit_cards=None):
         if not suit_cards:
@@ -225,7 +236,6 @@ class PokerHand:
                     self.flush_cards.append(suit_cards[i])
             self._straight_flush = self.__check_straight(self.flush_cards)
 
-
     def __check_straight(self, straight_cards=None):
         if not straight_cards:
             straight_cards = self.cards.copy()
@@ -242,15 +252,10 @@ class PokerHand:
         self._straight_cards = []
         self._straight_cards.append(cards[0])
         straight = False
-        # for i in range(len(values)-1):
         for i in range(len(cards) - 1):
             if cards[i].value + 1 == cards[i + 1].value:
-                # if values[i] + 1 == values[i + 1]:
-                #    straight += 1
                 self._straight_cards.append(cards[i+1])
-                # print(self._straight_cards,'----',len(self._straight_cards))
             else:
-                #    straight = 0
                 # in case we have 5 (straight) in row but 6th is not
                 if len(self._straight_cards) >= 5:
                     straight = True
@@ -259,7 +264,6 @@ class PokerHand:
                 self._straight_cards.append(cards[i])
         if len(self._straight_cards) >= 5:
             straight = True
-            #self._straight_flush = self.__check_suits(self._straight_cards)
         return straight
 
     def __cards_in_category(self, category_card):
@@ -292,7 +296,5 @@ class StandardDeck:
 
     def draw(self):
         new_card = self.cards[-1]
-        # self.cards = np.delete(self.cards, -1)
-        # self.cards.remove(self.cards[-1])
         self.cards = self.cards[:-1]
         return new_card
