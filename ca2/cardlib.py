@@ -12,9 +12,9 @@ class Suit(Enum):
 
 class PlayingCard:
     """
-    Playing cards for the deck.
-    Ranked as NumberedCard: 2-10, JackCard: 11, QueenCard: 12, KingCard: 13 and AceCard: 14
-    Suit is given as Suit.Spades, Suit.Hearts, Suit.Diamonds or Suit.Clubs
+    Playing cards for the deck.\n
+    Ranked as NumberedCard: 2-10, JackCard: 11, QueenCard: 12, KingCard: 13 and AceCard: 14\n
+    Suits are given as Suit.Spades, Suit.Hearts, Suit.Diamonds or Suit.Clubs
     """
     def __lt__(self, other):
         return self.value < other.value
@@ -89,27 +89,6 @@ class Hand:
     :param cards: Set initial cards for pre-determined hand or create an empty hand.
     :return: Empty Hand class or with initially set cards
 
-    add_card(self, new_card)
-        Adds the "new_card" to the hand.
-
-    sort_cards(self)
-        sorts the cards by value
-
-    sort_cards_by_suit(self)
-        sorts the cards by both value and suit, (Clubs, Diamonds, Hearts and Spades)
-
-    drop_cards(self, index)
-        Drops the cards presented by index
-        :param index: A list (or interger) of indices, with first position given as 0.
-        :return: Card(s) given by index
-
-    show_hand(self)
-        Presents the cards in the hand.
-
-    best_poker_hand(self, cards = [])
-        Calculates the best poker hand of the hand, and the added cards
-        :param cards: List of playing cards in addition to the hand cards.
-        :return: PokerHand-class with best poker hand type and best cards.
     """
     def __init__(self, cards=None):
         if cards is None:
@@ -117,14 +96,20 @@ class Hand:
         else:
             self.cards = cards
 
-    # add card to the hand with StandardDeck.take_card()
+    # add card to the hand with StandardDeck.draw()
     def add_card(self, new_card):
+        """Adds the "new_card" to the hand.
+
+        :param new_card: A playing card
+        """
         self.cards.append(new_card)
 
     def sort_cards(self):
+        """ Sorts the cards by value"""
         self.cards = sorted(self.cards, key=lambda x: getattr(x, 'value'))
 
     def sort_cards_by_suit(self):
+        """ Sorts the cards by both value and suit, (Clubs, Diamonds, Hearts and Spades)"""
         sorted_values = sorted(self.cards, key=lambda x: getattr(x, 'value'))
         sorting_suits = [[], [], [], []]
         for i in range(len(sorted_values)):
@@ -133,6 +118,12 @@ class Hand:
         self.cards = sorted(self.cards, key=lambda x: getattr(x, 'value'))
 
     def drop_cards(self, index=None):
+        """
+        Drops the cards presented by index
+
+        :param index: A list (or integer) of indices, with first position given as 0.
+        :return: Card(s) given by index
+        """
         try:
             if type(index) is int:
                 index = [index]
@@ -147,13 +138,21 @@ class Hand:
         except IndexError:
             print(f'IndexError: Given index is "{index}" while number of cards is {len(self.cards)}')
 
-    def show_hand(self):  # change ths to __repr__
+    def show_hand(self):
+        """ Presents the cards in the hand."""
         hand = []
         for i in range(len(self.cards)):
             hand.append([self.cards[i].value, self.cards[i].suit.name])
         print(hand)
 
-    def best_poker_hand(self, cards=[]):
+    def best_poker_hand(self, cards=None):
+        """ Calculates the best poker hand of the hand, and the added cards
+
+        :param cards: List of playing cards in addition to the hand cards.
+        :return: PokerHand-class with best poker hand type and best cards.
+        """
+        if cards is None:
+            cards = []
         poker_cards = self.cards.copy()
         if cards:
             if len(cards) > 1:
@@ -165,7 +164,22 @@ class Hand:
 
 class PokerHand:
     """
-    Add some comments here!!!
+    Calculates the best poker hand of the given cards.
+
+    :param cards: List of playing cards
+    :return: PokerHand class with the hand type of the best poker hand and the best cards.
+
+    Example:\n
+    >>> h1 = Hand([NumberedCard(2,Suit.Hearts),\
+    NumberedCard(2,Suit.Spades),\
+    NumberedCard(5,Suit.Spades),\
+    NumberedCard(5,Suit.Hearts),\
+    NumberedCard(10,Suit.Clubs)])
+
+    >>> ph1 = PokerHand(h1.cards)
+
+    >>> ph1.hand_type
+    <PokerHand.two_pair: 3>
 
     """
     def __init__(self, cards):
@@ -175,15 +189,15 @@ class PokerHand:
         self.__hand_type(hand_type)
 
     def __lt__(self, other):
-        if self.hand_type.value != other.hand_type.value:
+        if self.hand_type.value != other.hand_type.value:  # compares the rank of the poker hand type
             return self.hand_type.value < other.hand_type.value
-
         else:
             un_self, co_self = np.unique(self.best_cards, return_counts=True)
             un_other, co_other = np.unique(other.best_cards, return_counts=True)
             ind_self = np.array(range(len(un_self)))
             ind_other = np.array(range(len(un_other)))
             while any(co_self):
+                # compares the value between highest ranking cards, e.g. triplets then pair for full house
                 next_best_ranked_card_self = max(un_self[co_self == max(co_self)])
                 next_best_ranked_card_other = max(un_other[co_other == max(co_other)])
                 if next_best_ranked_card_self != next_best_ranked_card_other:
@@ -193,7 +207,6 @@ class PokerHand:
                     remove_index_other = ind_other[un_other == next_best_ranked_card_other]
                     co_self[remove_index_self] = 0
                     co_other[remove_index_other] = 0
-
             return False
 
     def __eq__(self, other):
@@ -294,11 +307,12 @@ class PokerHand:
                     self.flush_cards.append(suit_cards[i])
             self._straight_flush = self.__check_straight(self.flush_cards)
 
+    # straight_cards is to check if a given card series is straight. Used for flush to see if straight flush
     def __check_straight(self, straight_cards=None):
         if not straight_cards:
             straight_cards = self.cards.copy()
         cards = []
-        # Change the value of the ace from 14 to 1 if there's a 2
+        # Change the value of the ace from 14 to 1 if there's a 2 for low straight
         if (AceCard(Suit) in straight_cards) and (NumberedCard(2, Suit) in straight_cards):
             suit_of_acecard = straight_cards[straight_cards.index(AceCard(Suit))].suit
             cards.append(AceCard(suit_of_acecard, first=True))
@@ -314,11 +328,10 @@ class PokerHand:
             if cards[i].value + 1 == cards[i + 1].value:
                 self._straight_cards.append(cards[i + 1])
             else:
-                # in case we have 5 (straight) in row but 6th is not
-                if len(self._straight_cards) >= 5:
+                if len(self._straight_cards) >= 5:  # in case we have 5 (straight) in row but 6th is not
                     straight = True
                     break
-                self._straight_cards = []
+                self._straight_cards = []  # restart our check for straight
                 self._straight_cards.append(cards[i])
         if len(self._straight_cards) >= 5:
             straight = True
@@ -335,6 +348,12 @@ class PokerHand:
 
 
 class StandardDeck:
+    """
+    Creates a standard deck of 52 playing cards.
+
+    :returns: Main class StandardDeck. StandardDeck.cards is a list of 52 playing cards in value order Ace-King and
+     suit-order: Spades, Hearts, Diamonds, Clubs
+     """
     def __init__(self):
         cards = []
         for suit in enumerate(Suit):
@@ -348,12 +367,22 @@ class StandardDeck:
         self.cards = list(self.cards[:])  # to make the list mutable for random.shuffle()
 
     def shuffle(self):
+        """
+        Reorders the list of cards into a random order
+        """
+        random.shuffle(self.cards)
+        random.shuffle(self.cards)
         random.shuffle(self.cards)
         random.shuffle(self.cards)
         random.shuffle(self.cards)
         random.shuffle(self.cards)
 
     def draw(self):
+        """
+        Draws (removes) the top (last) card from the card-list
+
+        :returns: A playing card.
+        """
         new_card = self.cards[-1]
         self.cards = self.cards[:-1]
         return new_card
