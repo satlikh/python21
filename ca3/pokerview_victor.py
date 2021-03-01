@@ -3,6 +3,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtSvg import *
 from PyQt5.QtWidgets import *
 from cardlib import *
+from pokermodel_victor import *
 from abc import abstractmethod
 import sys
 
@@ -11,66 +12,6 @@ import sys
 # Remove from here...
 ###################
 
-
-class CardModel(QObject):
-    """ Base class that described what is expected from the CardView widget """
-
-    new_cards = pyqtSignal()  #: Signal should be emited when cards change.
-
-    @abstractmethod
-    def __iter__(self):
-        """Returns an iterator of card objects"""
-
-    @abstractmethod
-    def flipped(self):
-        """Returns true of cards should be drawn face down"""
-
-
-class HandModel(Hand, CardModel):
-    def __init__(self, player: int, cards=None):
-        Hand.__init__(self, cards)
-        CardModel.__init__(self)
-        # Additional state needed by the UI
-        self.flipped_cards = False
-        self.player = player
-
-    def __iter__(self):
-        return iter(self.cards)
-
-    def flip(self):
-        # Flips over the cards (to hide them)
-        self.flipped_cards = not self.flipped_cards
-        self.new_cards.emit()  # something changed, better emit the signal!
-
-    def flipped(self):
-        # This model only flips all or no cards, so we don't care about the index.
-        # Might be different for other games though!
-        return self.flipped_cards
-
-    def add_card(self, card):
-        super().add_card(card)
-        self.new_cards.emit()  # something changed, better emit the signal!
-
-    def best_poker_hand(self, cards=None):
-        return super().best_poker_hand(cards)
-
-
-
-
-class ButtonModel(QObject):
-    buttons = pyqtSignal()
-
-    def fold_button(self):
-        self.buttons.emit(print)
-
-    def check_button(self):
-        self.buttons.emit(print)
-
-    def bet_button(self):
-        self.buttons.emit(print)
-
-    def call_button(self):
-        self.buttons.emit(print)
 
 ###################
 # ...to here later!
@@ -205,9 +146,9 @@ class PlayerView(QGraphicsView):
         super().__init__()
         self.model = hand_model
         #self.scene = QGraphicsScene()
-        self.card_view = CardView(self.model, label=f'Player{self.model.player}')
+        self.card_view = CardView(self.model, label=f'Player{self.model}')
 
-        print(f'Typen är: {type(self.card_view.scene)}')
+        # print(f'Typen är: {type(self.card_view.scene)}')
         #self.card_view.setGeometry(0, 0, 300, 300)
         self._chips_and_betting = BettingBox(self.card_view, number_of_chips, current_betting)
 
@@ -238,12 +179,11 @@ class ButtonGrp(QGroupBox):
         # self.vbox.setGeometry(QRect(0,0,150,50))
         # self.setLayout(vbox)
 
-
 class PossiblePokerHand(QWidget):
     def __init__(self, poker_hand: PokerHand):
         super().__init__()
         poker_hand.best_cards.reverse()
-        card_list = HandModel(0, cards=poker_hand.best_cards)
+        card_list = HandModel(cards=poker_hand.best_cards)
         # card_list.player = poker_hand.hand_type.name
         self.poker_view = CardView(card_list, label=f'Current best: {poker_hand.hand_type.name}',
                                    font_size=50)
@@ -251,6 +191,19 @@ class PossiblePokerHand(QWidget):
         # self.setGeometry(0, 0, 150, 50)
         # print(self.width())
 
+
+class TableCardsView(QGraphicsProxyWidget):
+    def __init__(self, table_cards_model: TableCardsModel):
+        super().__init__()
+        self.model = table_cards_model
+        # self.model.new_cards.connect()
+        self.model.flip()
+        print(self.model.flipped())
+        view_poker_cards = CardView(self.model, label='Poker Cards', card_spacing=250)
+        view_poker_cards.setLayout(QHBoxLayout())
+        view_poker_cards.layout().addWidget(view_poker_cards)
+        self.setWidget(view_poker_cards)
+        self.setGeometry(QRectF(0, 0, 1000, 250))
 
 class BettingBox(QGraphicsView):  # funkar inte....
     def __init__(self, card_scene: CardView, number_of_chips, current_betting):
@@ -302,15 +255,12 @@ window = Window()
 ############
 card_list = [NumberedCard(3, Suit.Spades), NumberedCard(5, Suit.Hearts), NumberedCard(6, Suit.Clubs)
                , NumberedCard(10, Suit.Spades), NumberedCard(8, Suit.Diamonds)]
-poker_table_cards = HandModel(0)
-for i in card_list:
-    poker_table_cards.add_card(i)
-view_poker_cards = CardView(poker_table_cards, label='Poker Cards', card_spacing=250)
-view_poker_cards.setLayout(QHBoxLayout())
-view_poker_cards.layout().addWidget(view_poker_cards)
-table_cards_layout = QGraphicsProxyWidget()
-table_cards_layout.setWidget(view_poker_cards)
-table_cards_layout.setGeometry(QRectF(0, 0, 1000, 250))
+poker_table_cards = TableCardsModel()
+
+#for i in card_list:
+#    print(i)
+#    poker_table_cards.add_card(i)
+table_cards_layout = TableCardsView(poker_table_cards)
 
 
 # table_view.addLayout(vbox, 0, 1)
@@ -319,16 +269,16 @@ table_cards_layout.setGeometry(QRectF(0, 0, 1000, 250))
 # player cards
 ############
 
-hand = HandModel(1)
+hand = HandModel()
 hand.add_card(AceCard(Suit.Spades))
 hand.add_card(KingCard(Suit.Spades))
-hand.flip()
+# hand.flip()
 
-hand1 = HandModel(2)
+hand1 = HandModel()
 hand1.add_card(AceCard(Suit.Hearts))
 hand1.add_card(KingCard(Suit.Hearts))
 
-hand2 = HandModel(3)
+hand2 = HandModel()
 hand2.add_card(AceCard(Suit.Clubs))
 hand2.add_card(KingCard(Suit.Clubs))
 hand_list = [hand, hand1, hand2]
