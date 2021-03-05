@@ -64,6 +64,7 @@ class GameModel(QObject):
             self.new_betting_round()
         # else:
         #    ButtonModel(self.active_players[self.player_turn], self.highest_bet)
+        self.update_poker_hand()
         self.data_changed.emit()
 
     def check_current_betting(self):
@@ -128,6 +129,11 @@ class GameModel(QObject):
         # self.buttons(self.active_players[self.player_turn], self.highest_bet)
         self.data_changed.emit()
 
+    def update_poker_hand(self):
+        print('kort på bordet: ', self.table_cards.cards)
+        self.active_players[self.player_turn].poker_hand.update(self.table_cards.cards)
+
+
 ##################################
 # Buttons
 ##################################
@@ -151,17 +157,16 @@ class GameModel(QObject):
         self.button_clicked.emit()
 
     def call_button(self):
-        bet = self.current_bet - self.model.bet
+        bet = self.highest_bet - self.active_players[self.player_turn].bet
         self.active_players[self.player_turn].place_bet(bet, self.highest_bet)
         self.next_player()
         self.button_clicked.emit()
 
     def all_in_button(self):
-        bet = self.player.pot
+        bet = self.active_players[self.player_turn].pot
         self.active_players[self.player_turn].place_bet(bet, self.highest_bet)
         self.next_player()
         self.button_clicked.emit()
-
 
 
 class PlayerModel(QObject):
@@ -178,7 +183,7 @@ class PlayerModel(QObject):
         self.bet = 0
         self.pot = pot
         self.active_in_round = False
-        self.poker_hand = PokerHandModel([AceCard(Suit.Spades), AceCard(Suit.Hearts)])
+        self.poker_hand = PokerHandModel(self.hand)
 
     def __len__(self):
         return len([object])
@@ -209,9 +214,10 @@ class PlayerModel(QObject):
         if (self.bet + bet) < current_bet:
             self.error_message.emit("You have to bet more!")
         else:
-            self.current_pot(bet)
             self.bet += bet
-        self.data_changed.emit()
+            self.current_pot(bet)
+            print('current bet: ',self.bet)
+        # self.data_changed.emit()
 
     def reset_bet(self):
         self.bet = 0
@@ -222,7 +228,7 @@ class PlayerModel(QObject):
             self.error_message.emit("Bet too high!")
         else:
             self.pot -= bet
-        self.data_changed.emit()
+            # self.data_changed.emit()
 
     def won_round(self, won_pot):
         self.pot += won_pot
@@ -251,6 +257,7 @@ class HandModel(Hand, CardModel):
         self.flipped_cards = True
         # self.poker_hand = NumberedCard
         # self.player = player
+        poker_hand_cards = pyqtSignal()
 
     def __iter__(self):
         return iter(self.cards)
@@ -282,17 +289,29 @@ class HandModel(Hand, CardModel):
         self.new_cards.emit()
 
 
-class PokerHandModel(Hand):
-    # new_cards = pyqtSignal()
+class PokerHandModel(HandModel):
+    # new_poker_cards = pyqtSignal()
 
-    def __init__(self, cards=None):
-        Hand.__init__(self)
+    def __init__(self, hand):
+        HandModel.__init__(self)
+        self.model = hand
+        self.type = []
+        if self.model.cards:
+            self.update(self.model.cards)
+
+    def update(self, cards):
         # HandModel.__init__(self)
+        cards.copy().extend(self.model.cards)
+        print(cards)
         poker_hand = super().best_poker_hand(cards)
         poker_hand.best_cards.reverse()
         self.model = HandModel(cards=poker_hand.best_cards)  # for printing
+        print(self.model.cards)
+        if self.model.flipped():
+            self.model.flip()
+
         self.type = poker_hand.hand_type
-        # self.new_cards.emit()
+        super().new_poker_cards.emit()
 
 
 # class BettingModel(QObject):
@@ -341,7 +360,6 @@ class PokerHandModel(Hand):
 #         self.self.player.place_bet(bet)
 #         self.next_player()
 #         self.buttons.emit()
-
 
 
 class TableCardsModel(HandModel):
