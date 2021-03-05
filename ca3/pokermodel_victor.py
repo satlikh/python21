@@ -8,6 +8,7 @@ class GameModel(QObject):
     button_clicked = pyqtSignal()
     data_changed = pyqtSignal()
     game_message = pyqtSignal((str,))
+    poker_hand_changed = pyqtSignal()
 
     def __init__(self, players: list, starting_pot: int = 50):
         super().__init__()
@@ -21,7 +22,7 @@ class GameModel(QObject):
         self.table_cards = TableCardsModel()
         self.deck = StandardDeck()
         self.deck.shuffle()
-        # self.buttons = ButtonModel()
+        self.current_poker_hand = PokerHandModel()
 
         for player in players:
             self.add_player(player, starting_pot)
@@ -109,7 +110,7 @@ class GameModel(QObject):
         self.new_hand()
 
     def new_hand(self):
-        self.deck = StandardDeck()  # create .new_deck in class
+        self.deck.new_deck()
         self.deck.shuffle()
         for player in self.players:
             player.hand.clear()
@@ -126,17 +127,19 @@ class GameModel(QObject):
         self.table_cards.clear()
         self.player_turn = 0
         self.active_players[self.player_turn].set_active(True)
+        self.update_poker_hand()
         # self.buttons(self.active_players[self.player_turn], self.highest_bet)
         self.data_changed.emit()
 
     def update_poker_hand(self):
         print('kort på bordet: ', self.table_cards.cards)
-        self.active_players[self.player_turn].poker_hand.update(self.table_cards.cards)
-
+        self.current_poker_hand.update_model(self.active_players[self.player_turn], self.table_cards.cards)
+        self.poker_hand_changed.emit()
 
 ##################################
 # Buttons
 ##################################
+
     def fold_button(self):
         self.active_players[self.player_turn].hand.clear()
         self.active_players[self.player_turn].set_active_in_round(False)
@@ -157,8 +160,10 @@ class GameModel(QObject):
         self.button_clicked.emit()
 
     def call_button(self):
-        bet = self.highest_bet - self.active_players[self.player_turn].bet
-        self.active_players[self.player_turn].place_bet(bet, self.highest_bet)
+        if self.highest_bet:
+            print('highest bet: ', self.highest_bet)
+            bet = self.highest_bet - self.active_players[self.player_turn].bet
+            self.active_players[self.player_turn].place_bet(bet, self.highest_bet)
         self.next_player()
         self.button_clicked.emit()
 
@@ -183,7 +188,6 @@ class PlayerModel(QObject):
         self.bet = 0
         self.pot = pot
         self.active_in_round = False
-        self.poker_hand = PokerHandModel(self.hand)
 
     def __len__(self):
         return len([object])
@@ -258,6 +262,7 @@ class HandModel(Hand, CardModel):
         # self.poker_hand = NumberedCard
         # self.player = player
         poker_hand_cards = pyqtSignal()
+        # self.name = 'test'
 
     def __iter__(self):
         return iter(self.cards)
@@ -278,10 +283,10 @@ class HandModel(Hand, CardModel):
 
     # def best_poker_hand(self, cards=None):
     #     self.poker_hand = super().best_poker_hand(cards)
-    #     # print(self.poker_hand)
+        # print(self.poker_hand)
     #     self.poker_hand.best_cards.reverse()
-    #     self.poker_hand.model = HandModel(cards=self.poker_hand.best_cards)  # for printing
-    #     # self.poker_hand.type = poker_hand.hand_type
+        # self.poker_hand.model = HandModel(cards=self.poker_hand.best_cards)  # for printing
+        # self.poker_hand.type = poker_hand.hand_type
     #     self.new_cards.emit()
 
     def clear(self):
@@ -290,28 +295,52 @@ class HandModel(Hand, CardModel):
 
 
 class PokerHandModel(HandModel):
-    # new_poker_cards = pyqtSignal()
+    poker_hand_changed = pyqtSignal()
 
-    def __init__(self, hand):
-        HandModel.__init__(self)
-        self.model = hand
-        self.type = []
-        if self.model.cards:
-            self.update(self.model.cards)
+    def __init__(self, cards=[]):
+        super().__init__()
+        self.cards = cards
+        self.hand_type = None
+        self.name = 'None'
 
-    def update(self, cards):
-        # HandModel.__init__(self)
-        cards.copy().extend(self.model.cards)
-        print(cards)
-        poker_hand = super().best_poker_hand(cards)
-        poker_hand.best_cards.reverse()
-        self.model = HandModel(cards=poker_hand.best_cards)  # for printing
-        print(self.model.cards)
-        if self.model.flipped():
-            self.model.flip()
+    def update_model(self, player: PlayerModel, table_cards):
+        poker_hand = player.hand.best_poker_hand(table_cards)
+        self.cards = poker_hand.best_cards
+        self.cards.reverse()
+        self.hand_type = poker_hand.hand_type
+        self.name = poker_hand.hand_type.name
+        print(self.hand_type)
+        if self.flipped():
+            self.flip()
+        self.new_cards.emit()
+        self.poker_hand_changed.emit()
 
-        self.type = poker_hand.hand_type
-        super().new_poker_cards.emit()
+
+
+
+# class PokerHandModel(HandModel):
+#     # new_poker_cards = pyqtSignal()
+#
+#     def __init__(self, hand):
+#         HandModel.__init__(self)
+#         self.model = hand
+#         self.type = []
+#         if self.model.cards:
+#             self.update(self.model.cards)
+#
+#     def update(self, cards):
+#         # HandModel.__init__(self)
+#         cards.copy().extend(self.model.cards)
+#         print(cards)
+#         poker_hand = super().best_poker_hand(cards)
+#         poker_hand.best_cards.reverse()
+#         self.model = HandModel(cards=poker_hand.best_cards)  # for printing
+#         print(self.model.cards)
+#         if self.model.flipped():
+#             self.model.flip()
+#
+#         self.type = poker_hand.hand_type
+#         super().new_poker_cards.emit()
 
 
 # class BettingModel(QObject):
@@ -365,6 +394,7 @@ class PokerHandModel(HandModel):
 class TableCardsModel(HandModel):
     def __init__(self):
         HandModel.__init__(self)
+        self.name = 'Table cards'
 
     def __iter__(self):
         return iter(self.cards)

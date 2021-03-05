@@ -53,7 +53,7 @@ class CardView(QGraphicsView):
     back_card = QSvgRenderer('cards/Red_Back_2.svg')
     all_cards = read_cards()
 
-    def __init__(self, card_model: CardModel, label, card_spacing: int = 50, padding: int = 10, font_size: int = 50,
+    def __init__(self, card_model: CardModel, label_model=None, card_spacing: int = 50, padding: int = 10, font_size: int = 50,
                  card_scale: int = 1):
         """
         Initializes the view to display the content of the given model
@@ -67,7 +67,7 @@ class CardView(QGraphicsView):
         self.card_spacing = card_spacing
         self.padding = padding
         self.font_size = font_size
-        self.label = label
+        self.label = label_model
 
         self.model = card_model
         self.card_scale = card_scale
@@ -80,6 +80,18 @@ class CardView(QGraphicsView):
 
         # Add the cards the first time around to represent the initial state.
         self.change_cards()
+    #     card_model.new_cards.connect(self.update_label)
+    #     self.update_label()
+    #
+    # def update_label(self):
+    #     # print('text:', self.text)
+    #     font = QGraphicsTextItem(self.text)
+    #     font_style = QFont('Courier', self.font_size)
+    #     font_style.setBold(True)
+    #     font.setFont(font_style)
+    #     font.setDefaultTextColor(QColor(229, 0, 25))
+    #     font.setPos(self.font_size / 2, 0)
+    #     self.scene.addItem(font)
 
     def change_cards(self):
         # Add the cards from scratch
@@ -102,14 +114,14 @@ class CardView(QGraphicsView):
             # We could also do cool things like marking card by making them transparent if we wanted to!
             # c.setOpacity(0.5 if self.model.marked(i) else 1.0)
             self.scene.addItem(c)
-        font = QGraphicsTextItem(self.label)
+        font = QGraphicsTextItem(self.label.name.replace('_', ' '))
         font_style = QFont('Courier', self.font_size)
         font_style.setBold(True)
         font.setFont(font_style)
         font.setDefaultTextColor(QColor(229, 0, 25))
         font.setPos(self.font_size/2, 0)
         self.scene.addItem(font)
-        #self.scene.setSceneRect(300, 300, 300, 250)
+        self.scene.setSceneRect(300, 300, 300, 250)
         self.update_view()
 
     def update_view(self):
@@ -133,14 +145,8 @@ class PlayerView(QGraphicsView):
         super().__init__()
         self.model = player_model
         #self.scene = QGraphicsScene()
-        self.card_view = CardView(self.model.hand, label=f'{self.model.name}')
-
+        self.card_view = CardView(self.model.hand, label_model=self.model)
         self._chips_and_betting = BettingBox(self.model, self.card_view)
-
-
-
-
-#def view_table_cards(cards: PlayingCard):
 
 
 class ButtonGrp(QGroupBox):
@@ -180,25 +186,30 @@ class PossiblePokerHand(QWidget):
         super().__init__()
         self.game = game
         self.poker_view = None
-        #game.poker_hand_changed.connect(self.update)
-
-        self.update()
-
-    def update(self):
-        poker_hand = self.game.active_players[self.game.player_turn].poker_hand
-        # poker_hand.best_cards.reverse()
-        # card_list = HandModel(cards=poker_hand.best_cards)
-        # # card_list.player = poker_hand.hand_type.name
-        # self.poker_view = CardView(card_list, label=f'Current best: {poker_hand.hand_type.name}',
-        #                            font_size=50)
-        # # print(self.width())
-        # # self.setGeometry(0, 0, 150, 50)
-        # # print(self.width())
-        # print(self.game.active_players[self.game.player_turn].p)
-        if poker_hand.type:
-            self.poker_view = CardView(poker_hand.model, label=f'Current best: {poker_hand.type.name}', font_size=50)
-        else:
-            self.poker_view = CardView(poker_hand.model, label='Current best: ', font_size=50)
+        # game.poker_hand_changed.connect(self.update)
+        # if game.current_poker_hand.hand_type:
+        #     poker_name = game.current_poker_hand.hand_type.name
+        #     print(poker_name)
+        self.poker_view = CardView(self.game.current_poker_hand, label_model=self.game.current_poker_hand, font_size=50)
+    #     else:
+    #         self.poker_view = CardView(self.game.current_poker_hand, label_model=f'Current best: ', font_size=50)
+    # #     self.update()
+    # #
+    # # def update(self):
+    # #     # poker_hand = self.game.active_players[self.game.player_turn].poker_hand
+    # #     # poker_hand.best_cards.reverse()
+    # #     # card_list = HandModel(cards=poker_hand.best_cards)
+    # #     # # card_list.player = poker_hand.hand_type.name
+    # #     # self.poker_view = CardView(card_list, label=f'Current best: {poker_hand.hand_type.name}',
+    # #     #                            font_size=50)
+    # #     # # print(self.width())
+    # #     # # self.setGeometry(0, 0, 150, 50)
+    # #     # # print(self.width())
+    # #     # print(self.game.active_players[self.game.player_turn].p)
+    # #     if poker_hand.type:
+    # #         self.poker_view = CardView(poker_hand.model, label=f'Current best: {poker_hand.type.name}', font_size=50)
+    # #     else:
+    # #         self.poker_view = CardView(poker_hand.model, label='Current best: ', font_size=50)
 
 
 
@@ -213,7 +224,7 @@ class TableCardsView(QGraphicsProxyWidget):
         # self.model.new_cards.connect()
         self.model.flip()
         # print(self.model.flipped())
-        view_poker_cards = CardView(self.model, label='Poker Cards', card_spacing=250)
+        view_poker_cards = CardView(self.model, label_model=self.model, card_spacing=250)
         view_poker_cards.setLayout(QHBoxLayout())
         view_poker_cards.layout().addWidget(view_poker_cards)
         self.setWidget(view_poker_cards)
