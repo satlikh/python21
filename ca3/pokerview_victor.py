@@ -146,7 +146,23 @@ class PlayerView(QGraphicsView):
         self.model = player_model
         #self.scene = QGraphicsScene()
         self.card_view = CardView(self.model.hand, label_model=self.model)
-        self._chips_and_betting = BettingBox(self.model, self.card_view)
+        self._chips_and_betting = PlayerBettingBox(self.model, self.card_view)
+
+        def alert_winner(text: str):
+            msg = QMessageBox()
+            msg.setText(text)
+            msg.exec()
+
+        def alert_error(text: str):
+            msg = QMessageBox()
+            msg.setText(text)
+            msg.exec()
+        self.model.error_message.connect(alert_error)
+        self.model.winner_message.connect(alert_winner)
+
+
+
+
 
 
 class ButtonGrp(QGroupBox):
@@ -154,25 +170,36 @@ class ButtonGrp(QGroupBox):
     def __init__(self, game):
         super().__init__()
         self.game = game
-        # game.button_clicked.connect(self.update_view)
-        player = game.active_players[game.player_turn]
-        current_bet = game.highest_bet
+
         def bet_button_func():
-            self.game.bet_button(5)
+            if self.bet_line.text().isdigit():
+                bet = int(self.bet_line.text())
+                self.bet_line.clear()
+                self.game.bet_button(bet)
+            else:
+                self.bet_line.clear()
+                msg = QMessageBox()
+                msg.setText('There was no bet!')
+                msg.exec()
+
         self.setLayout(QVBoxLayout())
+        self.bet_line = QLineEdit()
+        self.bet_line.resize(100, 5)
         bet_button = QPushButton('Bet')
         bet_button.clicked.connect(bet_button_func)
-        ###### add a dialogbox or something here ofr betting!
+        self.layout().addWidget(self.bet_line)
+        self.layout().addWidget(bet_button)
+
         call_button = QPushButton('Call')
         call_button.clicked.connect(self.game.call_button)
-        self.layout().addWidget(bet_button)
         self.layout().addWidget(call_button)
-        self.setLayout(QVBoxLayout())
+
         fold_button = QPushButton('Fold')
         fold_button.clicked.connect(self.game.fold_button)
+        self.layout().addWidget(fold_button)
+
         check_button = QPushButton('Check')
         check_button.clicked.connect(self.game.check_button)
-        self.layout().addWidget(fold_button)
         self.layout().addWidget(check_button)
 
         all_in_button = QPushButton('All in!')
@@ -191,6 +218,9 @@ class PossiblePokerHand(QWidget):
         #     poker_name = game.current_poker_hand.hand_type.name
         #     print(poker_name)
         self.poker_view = CardView(self.game.current_poker_hand, label_model=self.game.current_poker_hand, font_size=50)
+        self.poker_view.setStyleSheet("margin: 0px; padding: 5px; \
+                           border-style: solid; border-width: 1px; \
+                           border-color: rgba(170,170,170,255);")
     #     else:
     #         self.poker_view = CardView(self.game.current_poker_hand, label_model=f'Current best: ', font_size=50)
     # #     self.update()
@@ -230,7 +260,8 @@ class TableCardsView(QGraphicsProxyWidget):
         self.setWidget(view_poker_cards)
         self.setGeometry(QRectF(0, 0, 1000, 250))
 
-class BettingBox(QGraphicsView):
+
+class PlayerBettingBox(QGraphicsView):
     def __init__(self, player, card_scene: CardView):
         super().__init__()
         self.setScene(card_scene.scene)
@@ -242,7 +273,7 @@ class BettingBox(QGraphicsView):
         # QColor(255, 255, 229)
         #'background-color: white;'))
         def update_layout():
-            print(player.name)
+            #print(player.name)
             box_position = QRectF(290, 30, 150, 160)
             font_style = QFont('Courier', 20)
             font_style.setBold(True)
@@ -260,6 +291,54 @@ class BettingBox(QGraphicsView):
 
         player.data_changed.connect(update_layout)
         update_layout()
+
+            # game_model.winner.connect(self.alert_winner)
+
+        # def alert_error(text: str):
+        #     msg = QMessageBox()
+        #     msg.setText(text)
+        #     msg.exec()
+        # player.error_message.connect(alert_error)
+
+
+class TableBettingBox(QWidget):
+    def __init__(self, game, game_view):
+        super().__init__()
+        self.game = game
+        layout = QVBoxLayout()
+        layout.setContentsMargins(10, 10, 10, 10)
+        self.setLayout(layout)
+        self.setStyleSheet("margin: 0px; padding: 0px; \
+      background-color: \
+                           rgba(255, 255, 229, 255); \
+                           color: rgba(0,0,0,255); \
+                           border-style: solid; \
+                           border-radius: 4px; border-width: 1px; \
+                           border-color: rgba(0,0,0,255);")
+        # print(player.name)
+        # box_position = QRectF(0, 0, 0, 0)
+
+        self.font_chips = QLabel()
+        self.font_bet = QLabel()
+        self.layout().addWidget(self.font_chips)
+        self.layout().addWidget(self.font_bet)
+
+        game.data_changed.connect(self.update_layout)
+        self.update_layout()
+
+    def update_layout(self):
+        font_style = QFont('Courier', 10)
+        font_style.setBold(True)
+        self.font_chips.setText(f'Total pot:  \n   {self.game.total_pot}')
+        self.font_chips.setFont(font_style)
+        # font_chips.setPos(box_position.x(), box_position.y() + 20)
+        self.font_bet.setText(f'Highest bet: \n   {self.game.highest_bet}')
+        self.font_bet.setFont(font_style)
+
+        #font_bet.setPos(box_position.x(), box_position.y() + 90)
+        # font_bet.setDefaultTextColor(QColor(229, 0, 25))
+        # layout.addRect(box_position, QColor(0, 0, 0)).setBrush(QColor(255, 255, 229))
+
 
 
 #         player.data_changed.connect(self.update_betting_box())
@@ -301,6 +380,7 @@ class GameView(QMainWindow):
             number_of_players = len(game_model.players)
             players_card_view = QGraphicsView()
             players_card_view.setLayout(QHBoxLayout())
+
             for player in game_model.players:
                 player_view = PlayerView(player)
                 players_card_view.layout().addWidget(player_view.card_view)
@@ -315,34 +395,67 @@ class GameView(QMainWindow):
             # player_buttons = ButtonModel()
 
             button_widget = ButtonGrp(game_model)
-            pA = QGraphicsProxyWidget()
-            pA.setWidget(button_widget)
+            button_layout = QGraphicsProxyWidget()
+            button_layout.setWidget(button_widget)
+            button_layout.setGeometry(QRectF())
 
             ############
             # poker cards
             ############
             # print(game_model.active_players)
-            # print(game_model.player_turn)
             ph_layout = PossiblePokerHand(game_model)
-            poker_hand_view = QGraphicsView()
-            poker_hand_view.setLayout(QHBoxLayout())
-            poker_hand_view.layout().addWidget(ph_layout.poker_view)
+            # poker_hand_view = QGraphicsView()
+            # poker_hand_view.setLayout(QHBoxLayout())
+            # poker_hand_view.layout().addWidget(ph_layout.poker_view)
             poker_hand_layout = QGraphicsProxyWidget()
-            poker_hand_layout.setWidget(poker_hand_view)
-            poker_hand_layout.setGeometry(QRectF(0, 0, 250, 250))
+            poker_hand_layout.setWidget(ph_layout.poker_view)
+            # poker_hand_layout.setWidget(poker_hand_view)
+            poker_hand_layout.setGeometry(QRectF(0, 0, 260, 250))
 
+            #############
+            # Table betting and pot
+            #############
+            table_bet_and_pot_widget = TableBettingBox(self.game, self)
+            table_bet_and_pot_layout = QGraphicsProxyWidget()
+            table_bet_and_pot_layout.setWidget(table_bet_and_pot_widget)
+            table_bet_and_pot_layout.setGeometry(QRectF(0, 0, 100, 50))
         ##########
         # add all layouts
         ##########
             table_cards_layout.setPos(0, 0)
             players_card_layout.setPos(0, 250)
-            pA.setPos(1000, 0)
+            button_layout.setPos(1010, 0)
             poker_hand_layout.setPos(750, 0)
+            table_bet_and_pot_layout.setPos(1131, 0)
+
 
             self.scene.addItem(table_cards_layout)
             self.scene.addItem(players_card_layout)
-            self.scene.addItem(pA)
+            self.scene.addItem(button_layout)
             self.scene.addItem(poker_hand_layout)
+            self.scene.addItem(table_bet_and_pot_layout)
+            game_model.error_message.connect(self.alert_player)
+            game_model.end_game.connect(self.end_game)
+
+
+        def alert_player(self, text: str):
+            msg = QMessageBox()
+            msg.setText(text)
+            msg.exec()
+
+        def end_game(self, text: str):
+            msgBox = QMessageBox()
+            msgBox.setIcon(QMessageBox.Information)
+            msgBox.setText(text)
+            msgBox.setWindowTitle("Game over!")
+            msgBox.setStandardButtons(QMessageBox.Reset | QMessageBox.Cancel)
+            # msgBox.buttonClicked.connect(msgButtonClick)
+
+            returnValue = msgBox.exec()
+            if returnValue == QMessageBox.Reset:
+                self.game.restart_game()
+            else:
+                self.close()
 
 #########################################
 # Remove what's after this later as well?
@@ -436,4 +549,5 @@ class GameView(QMainWindow):
 # window.scene.addItem(pA)
 # window.scene.addItem(poker_hand_layout)
 # window.show()
+
 
