@@ -41,6 +41,9 @@
       <module name="ca3" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/../ca2/Resubmission" />
       <option name="IS_MODULE_SDK" value="false" />
@@ -139,10 +142,10 @@
     <recent_temporary>
       <list>
         <item itemvalue="Python.pokergame" />
+        <item itemvalue="Python.pokergame" />
         <item itemvalue="Python.Testing_hand" />
         <item itemvalue="Python.pokergame" />
         <item itemvalue="Python.pokerview_victor" />
-        <item itemvalue="Python.pokergame" />
       </list>
     </recent_temporary>
   </component>

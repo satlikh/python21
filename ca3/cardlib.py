@@ -665,9 +665,9 @@ class PokerHand:
         self._straight_cards = []
         self._straight_cards.append(cards[0])
         straight = False
-        for i in range(len(cards) - 1):
-            if cards[i].value + 1 == cards[i + 1].value:
-                self._straight_cards.append(cards[i + 1])
+        for i in range(1, len(cards)):
+            if cards[i-1].value + 1 == cards[i].value:
+                self._straight_cards.append(cards[i])
             else:
                 if len(self._straight_cards) >= 5:  # in case we have 5 (straight) in row but 6th is not
                     straight = True

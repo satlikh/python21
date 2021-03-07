@@ -107,14 +107,13 @@ class GameModel(QObject):
             self.set_active_player()
 
         self.active_players[self.player_turn-1].set_active(False)
-        self.active_players[self.player_turn].set_active(True)
-
 
         betting_done = self.check_current_betting()
         if self.player_turn == 0 and betting_done:
-            print('hello')
+            # print('hello')
             self.new_betting_round()
 
+        self.active_players[self.player_turn].set_active(True)
         # else:
         #    ButtonModel(self.active_players[self.player_turn], self.highest_bet)
         # self.update_poker_hand()
@@ -132,7 +131,7 @@ class GameModel(QObject):
         return len(players_bet) == players_bet.count(players_bet[0])
 
     def new_betting_round(self):
-        print('betting round: ',self.betting_round)
+        # print('betting round: ',self.betting_round)
         self.betting_round += 1
         # print(self.betting_round)
         # self.set_active_player()
@@ -164,10 +163,13 @@ class GameModel(QObject):
         else:
             poker_hands = []
             for player in self.active_players:
+                player.set_active(True)  # We have a showdown and player presents their cards
                 poker_hands.append(player.hand.best_poker_hand(self.table_cards.cards))
-            index_best_poker_hand = poker_hands.index(max(poker_hands))
-            # self.update_poker_hand(index=index_best_poker_hand)
-            self.active_players[index_best_poker_hand].won_round(self.total_pot)
+            best_hand = max(poker_hands)
+            winner_indices = [i for i, x in enumerate(poker_hands) if x == best_hand]
+            number_of_winners = len(winner_indices)
+            for index in winner_indices:
+                self.active_players[index].won_round(round(self.total_pot/number_of_winners))
 
         self.new_hand()
 
