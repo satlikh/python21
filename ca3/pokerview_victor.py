@@ -157,6 +157,7 @@ class PlayerView(QGraphicsView):
             msg = QMessageBox()
             msg.setText(text)
             msg.exec()
+
         self.model.error_message.connect(alert_error)
         self.model.winner_message.connect(alert_winner)
 

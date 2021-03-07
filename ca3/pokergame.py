@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import *
 
 app = QApplication(sys.argv)
 
-players = ["Victor", "Mohammad", "Thomas"]  # more can be added
+players = ["Victor", "Mohammad", "Thomas", "Marcus"]  # more can be added
 model = GameModel(players)
 view = GameView(model)
 view.show()
