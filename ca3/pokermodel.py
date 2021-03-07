@@ -2,15 +2,16 @@ from PyQt5.QtCore import *
 from cardlib import *
 from abc import abstractmethod
 import numpy as np
-import sys
 
 
 class GameModel(QObject):
+    """ GameModel for a poker game in Texas Hold'em.
+    :param players: A list with the name of the different players.
+    :param starting_pot: An integer with the starting pot for the players, it's 50 if nothing is set.
+    """
     button_clicked = pyqtSignal()
     data_changed = pyqtSignal()
-    game_message = pyqtSignal((str,))
     error_message = pyqtSignal((str,))
-    # poker_hand_changed = pyqtSignal()
     end_game = pyqtSignal((str,))
 
     def __init__(self, players: list, starting_pot: int = 50):
@@ -32,24 +33,23 @@ class GameModel(QObject):
         self.deck.shuffle()
         self.current_poker_hand = PokerHandModel()
 
-
         for player in self.players_list:
             self.add_player(player)
 
     def __iter__(self):
         return iter(self.players)
 
+    def start(self):
+        if self.running:
+            self.error_message.emit("A game is already running!")
+
+        self.running = True
+        self.new_hand()
+
     def add_player(self, player):
         self.players.append(PlayerModel(player, self))
 
     def remove_zero_pot_players(self):
-        # zero_pot_indices = []
-        # for i, player in enumerate(self.players):
-        #     if player.pot == 0:
-        #         zero_pot_indices.append(i)
-        #         player.hand.clear()
-        # self.players = list(np.delete(self.players, zero_pot_indices))
-
         for i, player in enumerate(self.players):
             if player.pot == 0 and player.active_in_game:
                 player.set_active_in_game(False)
@@ -60,26 +60,8 @@ class GameModel(QObject):
             index = int(np.delete(range(len(self.players)), self.zero_pot_players))
             self.end_game.emit(f'{self.players[index]} won the game!')
 
-
-        # zero_pot_indices = []
-        # for i, player in enumerate(self.players):
-        #     if player.pot == 0:
-        #         player.set_active_in_game(False)
-        #         player.set_active(False)
-        #         player.set_active_in_round(False)
-        #         zero_pot_indices.append(i)
-        # if len(self.players) == len(zero_pot_indices) + 1:
-        #     index = int(np.delete(range(len(self.players)), zero_pot_indices))
-        #     self.end_game.emit(f'{self.players[index]} won the game!')
-
-    def start(self):
-        if self.running:
-            self.game_message.emit("A game is already running!")
-
-        self.running = True
-        self.new_hand()
-
     def set_active_player(self):
+        """ Removes players which have folded during the round. """
         del self.active_players[:]
         self.number_of_folded_players = 0
 
@@ -89,10 +71,10 @@ class GameModel(QObject):
         if len(self.active_players) == 1:
             self.check_winner()
         else:
-            # print(self.active_players)
             self.active_players[self.player_turn].set_active(True)
 
     def set_all_players_active(self):
+        """ Add all the players still in the game to the round. """
         del self.active_players[:]
 
         for player in self.players:
@@ -102,7 +84,8 @@ class GameModel(QObject):
 
     def next_player(self):
         self.player_turn = (self.player_turn + 1) % len(self.active_players)
-        # remove players that have folded in the round
+
+        # When everyone has had a turn we remove those who has folded.
         if self.player_turn == 0:
             self.set_active_player()
 
@@ -110,55 +93,55 @@ class GameModel(QObject):
 
         betting_done = self.check_current_betting()
         if self.player_turn == 0 and betting_done:
-            # print('hello')
             self.new_betting_round()
 
         self.active_players[self.player_turn].set_active(True)
-        # else:
-        #    ButtonModel(self.active_players[self.player_turn], self.highest_bet)
-        # self.update_poker_hand()
         self.data_changed.emit()
 
+        # Skip players that can't bet
         if self.active_players[self.player_turn].pot == 0:
             self.next_player()
 
     def check_current_betting(self):
+        """
+        Checks if all the bets are the equal
+        :return: bool
+        """
         players_bet = []
         for player in self.active_players:
             if player.active_in_round:
                 players_bet.append(player.bet)
-        # check if all the bets are the same
         return len(players_bet) == players_bet.count(players_bet[0])
 
     def new_betting_round(self):
-        # print('betting round: ',self.betting_round)
+        """ Adds card(s) to the poker table and increases the betting round until four round are reached. """
+
         self.betting_round += 1
-        # print(self.betting_round)
-        # self.set_active_player()
         if self.betting_round == 1:
-            # burning a card
-            self.deck.draw()
+            self.deck.draw()  # burned card
             self.table_cards.add_card(self.deck.draw())
             self.table_cards.add_card(self.deck.draw())
             self.table_cards.add_card(self.deck.draw())
         elif self.betting_round == 2:
-            self.deck.draw()
+            self.deck.draw()  # burned card
             self.table_cards.add_card(self.deck.draw())
         elif self.betting_round == 3:
-            self.deck.draw()
+            self.deck.draw()  # burned card
             self.table_cards.add_card(self.deck.draw())
         elif self.betting_round == 4:
             self.check_winner()
+        elif self.betting_round > 4:
+            self.error_message.emit('Something went wrong with the betting round! We must start a new round.')
+            self.new_hand()
 
-        # remove all players with active_in_round = False from active_players
         self.data_changed.emit()
 
     def check_winner(self):
+        """ Concludes the winner in the current round are adds the pot to the winner.
+        If it's a tie, the pot is evenly divided between the winners. A new round is then conducted
+         """
         if len(self.active_players) == 1:
-            # self.update_poker_hand(index=0)
             print(self.player_turn)
-            if self.player_turn == 0:
-                self.betting_round = -1
             self.active_players[0].won_round(self.total_pot)
         else:
             poker_hands = []
@@ -168,12 +151,17 @@ class GameModel(QObject):
             best_hand = max(poker_hands)
             winner_indices = [i for i, x in enumerate(poker_hands) if x == best_hand]
             number_of_winners = len(winner_indices)
+            winner = 0
             for index in winner_indices:
-                self.active_players[index].won_round(round(self.total_pot/number_of_winners))
+                winner += 1
+                self.active_players[index].won_round(round(self.total_pot/number_of_winners), winner=winner)
 
         self.new_hand()
 
     def new_hand(self):
+        """ Starts a new round. The players without any money are removed and a new deck is used.
+        The first player in the game always starts.
+        """
         self.deck.new_deck()
         self.deck.shuffle()
 
@@ -181,7 +169,7 @@ class GameModel(QObject):
 
         for player in self.players:
             player.hand.clear()
-            player.set_active(False)  # hide the cards
+            player.set_active(False)  # hides all the cards
         self.set_all_players_active()
         for _ in range(2):
             for player in self.active_players:
@@ -195,36 +183,26 @@ class GameModel(QObject):
         self.table_cards.clear()
         self.player_turn = 0
         self.active_players[self.player_turn].set_active(True)
-        # self.update_poker_hand()
-        # self.buttons(self.active_players[self.player_turn], self.highest_bet)
         self.data_changed.emit()
-
-    # def update_poker_hand(self, index=None):
-    #     # print('kort på bordet: ', self.table_cards.cards)
-    #     if index:
-    #         self.current_poker_hand.update_model(self.active_players[index], self.table_cards.cards)
-    #     else:
-    #         self.current_poker_hand.update_model(self.active_players[self.player_turn], self.table_cards.cards)
-    #     # self.poker_hand_changed.emit()
 
     def restart_game(self):
         for player in self.players:
             player.reset_player()
-        self.zero_pot_players = []
+        self.zero_pot_players.clear()
+        self.running = False
         self.start()
 
-
-##################################
-# Buttons
-##################################
+    ##################################
+    # Buttons
+    ##################################
 
     def fold_button(self):
         self.active_players[self.player_turn].hand.clear()
         self.active_players[self.player_turn].set_active_in_round(False)
 
         self.number_of_folded_players += 1
+        # If all the players but one have folded, we set the active players in the middle of the round.
         if self.number_of_folded_players == len(self.active_players) - 1:
-            # remove folded players to check winner
             self.set_active_player()
         else:
             self.next_player()
@@ -239,31 +217,31 @@ class GameModel(QObject):
 
     def bet_button(self, bet):
         self.active_players[self.player_turn].place_bet(bet, self.highest_bet)
-        # self.next_player()
         self.button_clicked.emit()
 
     def call_button(self):
         if self.highest_bet:
-            # print('highest bet: ', self.highest_bet)
             bet = self.highest_bet - self.active_players[self.player_turn].bet
             self.active_players[self.player_turn].place_bet(bet, self.highest_bet)
-            # self.next_player()
         self.button_clicked.emit()
 
     def all_in_button(self):
         bet = self.active_players[self.player_turn].pot
         self.active_players[self.player_turn].place_bet(bet, self.highest_bet)
-        # self.next_player()
         self.button_clicked.emit()
 
 
 class PlayerModel(QObject):
+    """ The model for each players.
+    :param name: String with the name of the player.
+    :param game: The GameModel
+    """
 
     data_changed = pyqtSignal()
     error_message = pyqtSignal((str,))
     winner_message = pyqtSignal((str,))
 
-    def __init__(self, name, game):
+    def __init__(self, name: str, game: GameModel):
         super().__init__()
         self.name = name
         self.hand = HandModel()
@@ -285,6 +263,7 @@ class PlayerModel(QObject):
         return "{}".format(self.name)
 
     def set_active(self, active):
+        """ Sets the player active by showing the cards and updates the current poker hand."""
         self.active = active
         if active:
             if self.hand.flipped():
@@ -302,6 +281,7 @@ class PlayerModel(QObject):
         self.data_changed.emit()
 
     def set_active_in_game(self, active_in_game):
+        """ Set if the player can do anything in the game. It's set to false when the player has lost the game."""
         if active_in_game:
             self.active_in_game = active_in_game
         else:
@@ -317,15 +297,12 @@ class PlayerModel(QObject):
     def place_bet(self, bet, current_bet):
         if (self.bet + bet) < current_bet:
             self.error_message.emit("You have to bet more!")
-            # print('current bet: ', current_bet, 'Have to bet more!')
         else:
             ok_bet = self.current_pot(bet)
             if ok_bet:
                 self.game.highest_bet = self.bet
                 self.game.total_pot += bet
                 self.game.next_player()
-            # print('current bet: ',self.bet)
-        # self.data_changed.emit()
 
     def reset_bet(self):
         self.bet = 0
@@ -333,10 +310,13 @@ class PlayerModel(QObject):
 
     def reset_player(self):
         self.pot = self.game.starting_pot
-        self.active_in_game = True
+        self.set_active_in_game(True)
         self.reset_bet()
 
     def current_pot(self, bet):
+        """ Changes the pot of the player.
+        :returns: bool if the attempted bet was possible or not.
+        """
         if self.pot - bet < 0:
             self.error_message.emit("Bet too high!")
             return False
@@ -344,11 +324,14 @@ class PlayerModel(QObject):
             self.bet += bet
             self.pot -= bet
             return True
-            # self.data_changed.emit()
 
-    def won_round(self, won_pot):
+    def won_round(self, won_pot, winner=1):
+
         self.set_active(True)
-        self.winner_message.emit(f"Yeah! {self.name} won!")
+        if winner == 1:
+            self.winner_message.emit(f"Yeah! {self.name} won!")
+        else:
+            self.winner_message.emit(f"Yeah! {self.name} also won!")
         self.pot += won_pot
         self.data_changed.emit()
 
@@ -373,10 +356,6 @@ class HandModel(Hand, CardModel):
         CardModel.__init__(self)
         # Additional state needed by the UI
         self.flipped_cards = True
-        # self.poker_hand = NumberedCard
-        # self.player = player
-        poker_hand_cards = pyqtSignal()
-        # self.name = 'test'
 
     def __iter__(self):
         return iter(self.cards)
@@ -395,20 +374,14 @@ class HandModel(Hand, CardModel):
         super().add_card(card)
         self.new_cards.emit()  # something changed, better emit the signal!
 
-    # def best_poker_hand(self, cards=None):
-    #     self.poker_hand = super().best_poker_hand(cards)
-        # print(self.poker_hand)
-    #     self.poker_hand.best_cards.reverse()
-        # self.poker_hand.model = HandModel(cards=self.poker_hand.best_cards)  # for printing
-        # self.poker_hand.type = poker_hand.hand_type
-    #     self.new_cards.emit()
-
     def clear(self):
-        del self.cards[:]
+        # Removes the cards from the hand
+        self.cards.clear()
         self.new_cards.emit()
 
 
 class PokerHandModel(HandModel):
+    """ The model is used to display the possible poker hand to the current player."""
     poker_hand_changed = pyqtSignal()
 
     def __init__(self, cards=[]):
@@ -423,89 +396,14 @@ class PokerHandModel(HandModel):
         self.cards.reverse()
         self.hand_type = poker_hand.hand_type
         self.name = poker_hand.hand_type.name
-        # print(self.hand_type)
         if self.flipped():
             self.flip()
         self.new_cards.emit()
         self.poker_hand_changed.emit()
 
 
-
-
-# class PokerHandModel(HandModel):
-#     # new_poker_cards = pyqtSignal()
-#
-#     def __init__(self, hand):
-#         HandModel.__init__(self)
-#         self.model = hand
-#         self.type = []
-#         if self.model.cards:
-#             self.update(self.model.cards)
-#
-#     def update(self, cards):
-#         # HandModel.__init__(self)
-#         cards.copy().extend(self.model.cards)
-#         print(cards)
-#         poker_hand = super().best_poker_hand(cards)
-#         poker_hand.best_cards.reverse()
-#         self.model = HandModel(cards=poker_hand.best_cards)  # for printing
-#         print(self.model.cards)
-#         if self.model.flipped():
-#             self.model.flip()
-#
-#         self.type = poker_hand.hand_type
-#         super().new_poker_cards.emit()
-
-
-# class BettingModel(QObject):
-#     betting = pyqtSignal()
-#
-#     def __init__(self, player: PlayerModel):
-#         super().__init__()
-#         self.model = player
-
-# class ButtonModel(QObject):
-#     buttons = pyqtSignal()
-#     error_message = pyqtSignal()
-#
-#     def __init__(self, player: PlayerModel, current_bet):
-#         super().__init__()
-#         self.player = player
-#         self.current_bet = current_bet
-#
-#     def fold_button(self):
-#         self.player.hand.clear()
-#         self.player.set_active_in_round(False)
-#         # self.active_player
-#         self.next_player()
-#         self.buttons.emit()
-#
-#     def check_button(self):
-#         if self.player.bet < self.current_bet:
-#             self.error_message.emit("You can't check!")
-#         else:
-#             self.next_player()
-#         self.buttons.emit()
-#
-#     def bet_button(self, bet):
-#         self.player.place_bet(bet)
-#         self.next_player()
-#         self.buttons.emit()
-#
-#     def call_button(self):
-#         bet = self.current_bet - self.model.bet
-#         self.player.place_bet(bet)
-#         self.next_player()
-#         self.buttons.emit()
-#
-#     def all_in_button(self):
-#         bet = self.player.pot
-#         self.self.player.place_bet(bet)
-#         self.next_player()
-#         self.buttons.emit()
-
-
 class TableCardsModel(HandModel):
+    """ Model to display the cards on the table. """
     def __init__(self):
         HandModel.__init__(self)
         self.name = 'Table cards'
@@ -519,27 +417,3 @@ class TableCardsModel(HandModel):
     def add_card(self, card):
         super().add_card(card)
         self.new_cards.emit()
-
-#########
-# testing
-#########
-#
-# p1 = PlayerModel('victor', 50)
-# p2 = PlayerModel('amanda', 50)
-# test = [p1, p2]
-# deck = StandardDeck()
-# p1.hand.add_card(deck.draw())
-# p1.hand.add_card(deck.draw())
-#
-#
-# p2.hand.add_card(deck.draw())
-# p2.hand.add_card(deck.draw())
-#
-#
-# tc = TableCardsModel()
-# tc.add_card(deck.draw())
-# tc.add_card(deck.draw())
-# tc.add_card(deck.draw())
-#
-# p1.hand.best_poker_hand()
-# p2.hand.best_poker_hand()

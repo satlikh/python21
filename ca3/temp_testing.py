@@ -2,6 +2,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtSvg import *
 from PyQt5.QtWidgets import *
 from pokermodel_victor import *
+import sys
 from abc import abstractmethod
 
 
@@ -346,93 +347,131 @@ class TableBettingBox(QWidget):
         # self.scene.setGeometry(QRect(0, 0, 30, 50))
 
 class GameView(QMainWindow):
-        def __init__(self, game_model: GameModel):
-            super().__init__()
-            # set Window
-            self.view = QGraphicsView()
-            self.view.setStyleSheet("background-image: url(cards/table.png);")
-            self.setCentralWidget(self.view)
-            self.scene = QGraphicsScene()
-            self.view.setScene(self.scene)
-            self.game = game_model
-            game_model.start()
-            #self.game.start()
-            ############
-            # table cards
-            ############
-            # poker_table_cards = TableCardsModel()
-            table_cards_layout = TableCardsView(game_model.table_cards)
-            #table_cards_layout = TableCardsView(self.game.table_cards)
+    def __init__(self, game_model: GameModel):
+        super().__init__()
+        # set Window
+        self.view = QGraphicsView()
+        self.view.setStyleSheet("background-image: url(cards/table.png);")
+        self.setCentralWidget(self.view)
+        self.scene = QGraphicsScene()
+        self.view.setScene(self.scene)
+        self.game = game_model
+        game_model.start()
+        #self.game.start()
+        ############
+        # table cards
+        ############
+        # poker_table_cards = TableCardsModel()
+        table_cards_layout = TableCardsView(game_model.table_cards)
+        #table_cards_layout = TableCardsView(self.game.table_cards)
 
-            ############
-            # player cards
-            ############
+        ############
+        # player cards
+        ############
 
-            number_of_players = len(game_model.players)
-            players_card_view = QGraphicsView()
-            players_card_view.setLayout(QHBoxLayout())
+        number_of_players = len(game_model.players)
+        players_card_view = QGraphicsView()
+        players_card_view.setLayout(QHBoxLayout())
 
-            for player in game_model.players:
-                player_view = PlayerView(player)
-                players_card_view.layout().addWidget(player_view.card_view)
+        for player in game_model.players:
+            player_view = PlayerView(player)
+            players_card_view.layout().addWidget(player_view.card_view)
 
-            players_card_layout = QGraphicsProxyWidget()
-            players_card_layout.setWidget(players_card_view)
-            players_card_layout.setGeometry(QRectF(0, 0, 330 * number_of_players, 300))
+        players_card_layout = QGraphicsProxyWidget()
+        players_card_layout.setWidget(players_card_view)
+        players_card_layout.setGeometry(QRectF(0, 0, 330 * number_of_players, 300))
 
-            ############
-            # player buttons
-            ############
-            # player_buttons = ButtonModel()
+        ############
+        # player buttons
+        ############
+        # player_buttons = ButtonModel()
 
-            button_widget = ButtonGrp(game_model)
-            button_layout = QGraphicsProxyWidget()
-            button_layout.setWidget(button_widget)
-            button_layout.setGeometry(QRectF())
+        button_widget = ButtonGrp(game_model)
+        button_layout = QGraphicsProxyWidget()
+        button_layout.setWidget(button_widget)
+        button_layout.setGeometry(QRectF())
 
-            ############
-            # poker cards
-            ############
-            # print(game_model.active_players)
-            # print(game_model.player_turn)
-            ph_layout = PossiblePokerHand(game_model)
-            # poker_hand_view = QGraphicsView()
-            # poker_hand_view.setLayout(QHBoxLayout())
-            # poker_hand_view.layout().addWidget(ph_layout.poker_view)
-            poker_hand_layout = QGraphicsProxyWidget()
-            poker_hand_layout.setWidget(ph_layout.poker_view)
-            # poker_hand_layout.setWidget(poker_hand_view)
-            poker_hand_layout.setGeometry(QRectF(0, 0, 260, 250))
+        ############
+        # poker cards
+        ############
+        # print(game_model.active_players)
+        # print(game_model.player_turn)
+        ph_layout = PossiblePokerHand(game_model)
+        # poker_hand_view = QGraphicsView()
+        # poker_hand_view.setLayout(QHBoxLayout())
+        # poker_hand_view.layout().addWidget(ph_layout.poker_view)
+        poker_hand_layout = QGraphicsProxyWidget()
+        poker_hand_layout.setWidget(ph_layout.poker_view)
+        # poker_hand_layout.setWidget(poker_hand_view)
+        poker_hand_layout.setGeometry(QRectF(0, 0, 260, 250))
 
-            #############
-            # Table betting and pot
-            #############
-            table_bet_and_pot_widget = TableBettingBox(self.game, self)
-            table_bet_and_pot_layout = QGraphicsProxyWidget()
-            table_bet_and_pot_layout.setWidget(table_bet_and_pot_widget)
-            table_bet_and_pot_layout.setGeometry(QRectF(0, 0, 100, 50))
-        ##########
-        # add all layouts
-        ##########
-            table_cards_layout.setPos(0, 0)
-            players_card_layout.setPos(0, 250)
-            button_layout.setPos(1010, 0)
-            poker_hand_layout.setPos(750, 0)
-            table_bet_and_pot_layout.setPos(1131, 0)
+        #############
+        # Table betting and pot
+        #############
+        table_bet_and_pot_widget = TableBettingBox(self.game, self)
+        table_bet_and_pot_layout = QGraphicsProxyWidget()
+        table_bet_and_pot_layout.setWidget(table_bet_and_pot_widget)
+        table_bet_and_pot_layout.setGeometry(QRectF(0, 0, 100, 50))
+    ##########
+    # add all layouts
+    ##########
+        table_cards_layout.setPos(0, 0)
+        players_card_layout.setPos(0, 250)
+        button_layout.setPos(1010, 0)
+        poker_hand_layout.setPos(750, 0)
+        table_bet_and_pot_layout.setPos(1131, 0)
 
 
-            self.scene.addItem(table_cards_layout)
-            self.scene.addItem(players_card_layout)
-            self.scene.addItem(button_layout)
-            self.scene.addItem(poker_hand_layout)
-            self.scene.addItem(table_bet_and_pot_layout)
-            game_model.error_message.connect(self.alert_player)
-            # game_model.winner.connect(self.alert_player)
+        self.scene.addItem(table_cards_layout)
+        self.scene.addItem(players_card_layout)
+        self.scene.addItem(button_layout)
+        self.scene.addItem(poker_hand_layout)
+        self.scene.addItem(table_bet_and_pot_layout)
+        game_model.error_message.connect(self.alert_player)
+        # game_model.winner.connect(self.alert_player)
 
-        def alert_player(self, text: str):
-            msg = QMessageBox()
-            msg.setText(text)
-            msg.exec()
+        self.setWindowFlags(Qt.WindowTitleHint)
+        #m_titleBar = TitleBar(self)
+        #self.scene.addWidget(m_titleBar)
+
+    def alert_player(self, text: str):
+        msg = QMessageBox()
+        msg.setText(text)
+        msg.exec()
+
+class TitleBar(QDialog):
+    def __init__(self, parent=None):
+        QDialog.__init__(self, parent)
+        self.setWindowFlags(Qt.FramelessWindowHint)
+        css = """
+        QWidget{
+            Background: #AA00AA;
+            color:white;
+            font:12px bold;
+            font-weight:bold;
+            border-radius: 1px;
+            height: 11px;
+        }
+        QDialog{
+            Background-image:url('img/titlebar bg.png');
+            font-size:12px;
+            color: black;
+
+        }
+        QToolButton{
+            Background:#AA00AA;
+            font-size:11px;
+        }
+        QToolButton:hover{
+            Background: #FF00FF;
+            font-size:11px;
+        }
+        """
+        self.setAutoFillBackground(True)
+        self.setBackgroundRole(QPalette.Highlight)
+
+
+
 
 #########################################
 # Remove what's after this later as well?

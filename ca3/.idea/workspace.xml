@@ -25,6 +25,9 @@
       <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
     </file-type-list>
   </component>
+  <component name="ProblemsViewState">
+    <option name="selectedIndex" value="1" />
+  </component>
   <component name="ProjectId" id="1p6qxsrOXDONBPa4Zo8euzNXHo6" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
@@ -143,9 +146,9 @@
       <list>
         <item itemvalue="Python.pokergame" />
         <item itemvalue="Python.pokergame" />
-        <item itemvalue="Python.Testing_hand" />
+        <item itemvalue="Python.temp_testing" />
         <item itemvalue="Python.pokergame" />
-        <item itemvalue="Python.pokerview_victor" />
+        <item itemvalue="Python.pokergame" />
       </list>
     </recent_temporary>
   </component>
