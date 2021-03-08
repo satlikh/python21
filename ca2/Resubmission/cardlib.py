@@ -61,7 +61,6 @@ class PlayingCard(metaclass=abc.ABCMeta):
         :rtype: Boolean
         """
         return self.get_value() < other.get_value()
-        # pass
 
     def __eq__(self, other):
         """
@@ -75,7 +74,6 @@ class PlayingCard(metaclass=abc.ABCMeta):
         :rtype: Boolean
         """
         return self.get_value() == other.get_value()
-        # pass
 
     @abstractmethod
     def get_value(self):
@@ -88,18 +86,6 @@ class PlayingCard(metaclass=abc.ABCMeta):
     @abstractmethod
     def __str__(self):
         pass
-
-    # def __str__(self):
-    #    """
-    #    Returns the name and value of the playing card.
-    #    """
-    #    return "[{}, {}]".format(self.suit.name, self.value)
-
-    # def __repr__(self):
-    #    """
-    #    Returns the name and value of the playing card.
-    #    """
-    #    return "{}({})".format(self.suit.name, self.value)
 
 
 class NumberedCard(PlayingCard):
@@ -123,7 +109,6 @@ class NumberedCard(PlayingCard):
         :rtype: NumberedCard
         """
         self.value = value
-        # self.suit = suit
 
     def get_value(self):
         """
@@ -132,7 +117,6 @@ class NumberedCard(PlayingCard):
         :returns: value of a numbered card.
         :rtype: int
         """
-        # print(self.value)
         return self.value
 
     def __str__(self):
@@ -166,7 +150,6 @@ class JackCard(PlayingCard):
         :returns: A `JackCard` object.
         :rtype: JackCard
         """
-        # self.suit = suit
         self.value = 11
 
     def get_value(self):
@@ -209,7 +192,6 @@ class QueenCard(PlayingCard):
         :returns: A `QueenCard` object.
         :rtype: QueenCard
         """
-        # self.suit = suit
         self.value = 12
 
     def get_value(self):
@@ -219,7 +201,6 @@ class QueenCard(PlayingCard):
         :returns: value of a queen card which is 12 by default.
         :rtype: int
         """
-        # print(self.value)
         return self.value
 
     def __str__(self):
@@ -253,7 +234,6 @@ class KingCard(PlayingCard):
         :returns: A `KingCard` object.
         :rtype: KingCard
         """
-        # self.suit = suit
         self.value = 13
 
     def get_value(self):
@@ -263,7 +243,6 @@ class KingCard(PlayingCard):
         :returns: value of a king card which is 13 by default.
         :rtype: int
         """
-        # print(self.value)
         return self.value
 
     def __str__(self):
@@ -286,7 +265,7 @@ class AceCard(PlayingCard):
     This class is representing the Ace cards in the Poker game. AceCard is a child of `PlayingCard`
     abstract class.
     """
-    def __init__(self,  suit: Suit, value: int = 14, first=False):
+    def __init__(self,  suit: Suit, first=False):
         super().__init__(suit)
         """
         Returns a `AceCard` object.
@@ -301,7 +280,6 @@ class AceCard(PlayingCard):
             self.value = 1
         else:
             self.value = 14
-        # self.suit = suit
 
     def get_value(self):
         """
@@ -310,7 +288,6 @@ class AceCard(PlayingCard):
         :returns: value of a ace card which is 14 by default.
         :rtype: int
         """
-        # print(self.value)
         return self.value
 
     def __str__(self):
@@ -353,7 +330,7 @@ class Hand:
         """Adds the "new_card" to the hand.
 
         :param new_card: A `PlayingCard` object to be added to `Hand`.
-        :type new_crd: a `PlayingCard` object
+        :type new_card: a `PlayingCard` object
         """
         self.cards.append(new_card)
 
@@ -420,7 +397,7 @@ class Hand:
         """ Calculates the best poker hand of the hand, and the added cards
 
         :param cards: List of playing cards in addition to the hand cards.
-        :type cads: PlayinCard
+        :type cards: PlayinCard
 
         :return: PokerHand-class with best poker hand type and best cards.
         :rtype: Hand
@@ -436,7 +413,9 @@ class Hand:
         return PokerHand(poker_cards)
 
 
-class PokerHandType(Enum):
+class PokerHandType(IntEnum):
+    """ This is an enumerate class for the different poker hand type with their corresponding rank/value. Highest value
+    i.e. STRAIGHT_FLUSH with value 9 is the best."""
     HIGH_CARD = 1
     ONE_PAIR = 2
     TWO_PAIR = 3
@@ -453,6 +432,7 @@ class PokerHandType(Enum):
     def __eq__(self, other):
         return self.value == other.value
 
+
 class PokerHand:
     """
     Calculates the best poker hand of the given cards.
@@ -465,7 +445,7 @@ class PokerHand:
                    NumberedCard(10,Suit.Clubs)])
     >>> ph1 = PokerHand(h1.cards)
     >>> ph1.hand_type
-    <PokerHand.two_pair: 3>
+    <PokerHandType.TWO_PAIR: 3>
     """
 
     def __init__(self, cards):
@@ -542,8 +522,6 @@ class PokerHand:
         7-'four_of_a_kind'
         8-'straight_flush'
 
-        :param hand_type: the hand type of the poker hand.
-        :type hand_type: Enum hand type
         """
         self.best_cards = []
         values = []
@@ -558,6 +536,7 @@ class PokerHand:
             self.points = 9
             self.hand_type = PokerHandType(9)
         elif self.points < 7 and (self._flush or self._straight):
+
             if self._flush:
                 self.__best_cards(self.flush_cards)
                 self.points = 6
@@ -573,8 +552,10 @@ class PokerHand:
     # and sets it as the best cards
     def __best_cards(self, category_cards=None):
         """
-        Takes the 5 best cards and them determines the best card of the poker hand. This card would be
+        Takes the 5 best cards between the poker hand type cards and the other cards. These other cards would be
         used for comparison with other poker hands.
+        :param category_cards: Card list with the cards of the poker hand type, e.g. the cards of a pair,
+        four of a kind etc.
         """
         other_cards = self.cards.copy()
         indices = []
@@ -589,7 +570,6 @@ class PokerHand:
         category_cards.extend(self.other_cards)
         self.best_cards = category_cards[:5].copy()
 
-    # checks if there's any duplicate values, i.e. multiple of a kind
     def __duplicate_values(self):
         """
         Checks if there's any duplicate values, i.e. multiple of a kind.
@@ -649,6 +629,8 @@ class PokerHand:
     def __check_straight(self, straight_cards=None):
         """
         Checks if the poker hand is a straight.
+        :param straight_cards: A list of cards which are to be determined if they are straight or not,
+        used in __check_flush to check straight flush.
         """
         if not straight_cards:
             straight_cards = self.cards.copy()
@@ -661,24 +643,25 @@ class PokerHand:
             if KingCard(Suit) not in straight_cards:
                 del (straight_cards[-1])  # removes AceCard with value 14
         cards.extend(straight_cards)
-        cards.sort()
+        # cards.sort()
+        cards = list(np.unique(cards))
         self._straight_cards = []
         self._straight_cards.append(cards[0])
         straight = False
-        for i in range(len(cards) - 1):
-            if cards[i].value + 1 == cards[i + 1].value:
-                self._straight_cards.append(cards[i + 1])
+        for i in range(1, len(cards)):
+            if cards[i-1].value + 1 == cards[i].value:
+                self._straight_cards.append(cards[i])
             else:
                 if len(self._straight_cards) >= 5:  # in case we have 5 (straight) in row but 6th is not
                     straight = True
                     break
-                self._straight_cards = []  # restart our check for straight
+                self._straight_cards.clear()  # restart our check for straight
                 self._straight_cards.append(cards[i])
         if len(self._straight_cards) >= 5:
+            self._straight_cards = self._straight_cards[-5:]  # takes the five highest of the straight cards
             straight = True
         return straight
 
-    # Used for __duplicate_values to get the list of the multiple value
     def __cards_in_category(self, category_card):
         """
         Used for __duplicate_values to get the list of the multiple value
@@ -714,6 +697,9 @@ class StandardDeck:
         self.new_deck()
 
     def new_deck(self):
+        """
+        Creates a new list of 52 playing cards in StandardDeck.cards
+        """
         self.cards.clear()
         for suit in Suit:
             for i in range(2, 15):
@@ -749,6 +735,3 @@ class StandardDeck:
         new_card = self.cards[-1]
         self.cards = self.cards[:-1]
         return new_card
-
-
-

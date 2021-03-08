@@ -60,7 +60,6 @@ def test_straight_flush():
     assert check_hand.hand_type.value == 9
     assert check_hand.hand_type.name == 'STRAIGHT_FLUSH'
     print('Test Straight flush : ====================================================')
-    print(check_hand.best_cards)
     print('Straight-flush gives:', check_hand.points, 'points with hand:', end=' [')
     for i in check_hand.best_cards:
         print(i, end=' ')
@@ -78,11 +77,37 @@ def test_pair():
     assert check_hand.hand_type.value == 2
     assert check_hand.hand_type.name == 'ONE_PAIR'
     print('Test One Pair : ====================================================')
-    print(check_hand.best_cards)
     print('Pair gives:', check_hand.hand_type.value, 'points with hand:', end=' [')
     for i in check_hand.best_cards:
         print(i, end=' ')
     print(']\n')
+
+    # test pairs in all values
+    j = 4
+    k = 3
+    for i in range(2, 11):
+        hc = Hand([NumberedCard(i, Suit.Spades), AceCard(Suit.Hearts)])
+        if k == i:
+            k = 2
+        elif j == i:
+            j = 3
+        tc = [NumberedCard(i, Suit.Hearts), KingCard(Suit.Diamonds), JackCard(Suit.Clubs),
+              NumberedCard(j, Suit.Hearts), NumberedCard(k, Suit.Spades)]
+        ph = hc.best_poker_hand(tc)
+        assert ph.hand_type.value == 2
+        assert ph.hand_type.name == 'ONE_PAIR'
+
+    cards_list = [KingCard(Suit.Clubs), JackCard(Suit.Diamonds), AceCard(Suit.Diamonds)]
+    for card in cards_list:
+        hc = Hand([card, AceCard(Suit.Hearts)])
+        ph = hc.best_poker_hand(tc)
+        assert ph.hand_type.value == 2
+        assert ph.hand_type.name == 'ONE_PAIR'
+
+    hc = Hand([QueenCard(Suit.Spades), QueenCard(Suit.Hearts)])
+    ph = hc.best_poker_hand(tc)
+    assert ph.hand_type.value == 2
+    assert ph.hand_type.name == 'ONE_PAIR'
 
 
 def test_two_pairs():
@@ -98,7 +123,6 @@ def test_two_pairs():
     assert check_hand.hand_type.value == 3
     assert check_hand.hand_type.name == 'TWO_PAIR'
     print('Test two pairs : ====================================================')
-    print(check_hand.best_cards)
     print('Two pair gives:', check_hand.points, 'points with hand:', end=' [')
     for i in check_hand.best_cards:
         print(i, end=' ')
@@ -117,11 +141,41 @@ def test_three():
     assert check_hand.hand_type.value == 4
     assert check_hand.hand_type.name == 'THREE_OF_A_KIND'
     print('Test three of a kind : ====================================================')
-    print(check_hand.best_cards)
     print('Three of a kind gives:', check_hand.points, 'points with hand:', end=' [')
     for i in check_hand.best_cards:
         print(i, end=' ')
     print(']\n')
+
+    k = 3
+    for i in range(2, 11):
+        hc = Hand([NumberedCard(i, Suit.Spades), AceCard(Suit.Hearts)])
+        if k == i:
+            k = 2
+        tc = [NumberedCard(i, Suit.Hearts), KingCard(Suit.Diamonds), JackCard(Suit.Clubs),
+              NumberedCard(i, Suit.Clubs), NumberedCard(k, Suit.Spades)]
+        ph = hc.best_poker_hand(tc)
+        assert ph.hand_type.value == 4
+        assert ph.hand_type.name == 'THREE_OF_A_KIND'
+        assert ph.best_cards == [NumberedCard(i, Suit.Hearts), NumberedCard(i, Suit.Clubs),
+                                 NumberedCard(i, Suit.Spades), AceCard(Suit.Hearts), KingCard(Suit.Diamonds)]
+
+    cards_list_king = [KingCard(Suit.Diamonds), KingCard(Suit.Clubs)]
+    cards_list_jack = [JackCard(Suit.Diamonds), JackCard(Suit.Clubs)]
+    cards_list_ace = [AceCard(Suit.Diamonds), AceCard(Suit.Clubs)]
+
+    for c1, c2 in cards_list_king, cards_list_jack, cards_list_ace:
+        tc = [c1, KingCard(Suit.Spades), JackCard(Suit.Clubs),
+              NumberedCard(3, Suit.Clubs), NumberedCard(5, Suit.Spades)]
+        hc = Hand([c2, AceCard(Suit.Hearts)])
+        ph = hc.best_poker_hand(tc)
+        assert ph.hand_type.value == 4
+        assert ph.hand_type.name == 'THREE_OF_A_KIND'
+
+    tc[0] = QueenCard(Suit.Diamonds)
+    hc = Hand([QueenCard(Suit.Spades), QueenCard(Suit.Hearts)])
+    ph = hc.best_poker_hand(tc)
+    assert ph.hand_type.value == 4
+    assert ph.hand_type.name == 'THREE_OF_A_KIND'
 
 def test_full_house():
     deck = StandardDeck()
@@ -138,7 +192,6 @@ def test_full_house():
     assert check_hand.hand_type.value == 7
     assert check_hand.hand_type.name == 'FULL_HOUSE'
     print('Test full house : ====================================================')
-    print(check_hand.best_cards)
     print('Full house gives:', check_hand.points, 'points with hand:', end=' [')
     for i in check_hand.best_cards:
         print(i, end=' ')
@@ -158,11 +211,40 @@ def test_four():
     assert check_hand.hand_type.value == 8
     assert check_hand.hand_type.name == 'FOUR_OF_A_KIND'
     print('Test four of a kind : ====================================================')
-    print(check_hand.best_cards)
     print('Four of a kind gives:', check_hand.points, 'points with hand:', end=' [')
     for i in check_hand.best_cards:
         print(i, end=' ')
     print(']\n')
+
+
+    for i in range(2, 11):
+        hc = Hand([NumberedCard(i, Suit.Spades), AceCard(Suit.Hearts)])
+        tc = [NumberedCard(i, Suit.Hearts), KingCard(Suit.Diamonds), JackCard(Suit.Clubs),
+              NumberedCard(i, Suit.Diamonds), NumberedCard(i, Suit.Clubs)]
+        ph = hc.best_poker_hand(tc)
+        assert ph.hand_type.value == 8
+        assert ph.hand_type.name == 'FOUR_OF_A_KIND'
+        assert ph.best_cards == [NumberedCard(i, Suit.Hearts), NumberedCard(i, Suit.Diamonds),
+                                 NumberedCard(i, Suit.Clubs), NumberedCard(i, Suit.Spades), AceCard(Suit.Hearts)]
+
+    cards_list_king = [KingCard(Suit.Clubs), KingCard(Suit.Hearts), KingCard(Suit.Spades)]
+    cards_list_jack = [JackCard(Suit.Diamonds), JackCard(Suit.Hearts), JackCard(Suit.Spades)]
+    cards_list_ace = [AceCard(Suit.Diamonds), AceCard(Suit.Hearts), AceCard(Suit.Spades)]
+
+    for c1, c2, c3 in cards_list_king, cards_list_jack, cards_list_ace:
+        tc = [c2, KingCard(Suit.Diamonds), JackCard(Suit.Clubs),
+              NumberedCard(6, Suit.Clubs), c3]
+        hc = Hand([c1, AceCard(Suit.Hearts)])
+        ph = hc.best_poker_hand(tc)
+        assert ph.hand_type.value == 8
+        assert ph.hand_type.name == 'FOUR_OF_A_KIND'
+
+    tc[0:2] = [QueenCard(Suit.Diamonds), QueenCard(Suit.Clubs)]
+
+    hc = Hand([QueenCard(Suit.Spades), QueenCard(Suit.Hearts)])
+    ph = hc.best_poker_hand(tc)
+    assert ph.hand_type.value == 8
+    assert ph.hand_type.name == 'FOUR_OF_A_KIND'
 
 def test_straight():
     deck = StandardDeck()
@@ -177,11 +259,24 @@ def test_straight():
     assert check_hand.hand_type.value == 5
     assert check_hand.hand_type.name == 'STRAIGHT'
     print('Test straight : ====================================================')
-    print(check_hand.best_cards)
     print('Straight gives:', check_hand.points, 'points with hand:', end=' [')
     for i in check_hand.best_cards:
         print(i, end=' ')
     print(']\n')
+
+    # Check that straight works for all the cards values
+    suit_list = [suit for suit in Suit] * 2 + [Suit.Spades, Suit.Hearts]
+    card_list = [AceCard(Suit.Clubs, first=True)] + [NumberedCard(x, suit) for x, suit in zip(range(2,11), suit_list)]\
+        + [JackCard(Suit.Hearts), QueenCard(Suit.Diamonds), KingCard(Suit.Clubs), AceCard(Suit.Spades)]
+
+    hc = Hand([NumberedCard(3, Suit.Clubs), NumberedCard(5, Suit.Hearts)])
+    for i in range(9):
+        pc = card_list[i:i+5]
+        ph = hc.best_poker_hand(pc)
+        assert ph.hand_type.value == 5
+        assert ph.hand_type.name == 'STRAIGHT'
+        assert ph.best_cards == pc
+
 
 def test_flush():
     deck = StandardDeck()
@@ -196,7 +291,6 @@ def test_flush():
     assert check_hand.hand_type.value == 6
     assert check_hand.hand_type.name == 'FLUSH'
     print('Test flush : ====================================================')
-    print(check_hand.best_cards)
     print('Flush:', check_hand.points, 'points with hand:', end=' [')
     for i in check_hand.best_cards:
         print(i, end=' ')
