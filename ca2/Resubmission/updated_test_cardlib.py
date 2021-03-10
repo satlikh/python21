@@ -1,5 +1,5 @@
 import pytest
-from cardlib import *
+from updated_cardlib import *
 
 # Most of the errors may come from data entry level of the program. So, some tests would be done to see if
 # the program can handle them.
@@ -111,7 +111,7 @@ def test_dressed_cards_value_encapsulation():
     """
     jack_heart = JackCard(Suit.Hearts)
     try:
-        jack_heart.value = 11
+        jack_heart.value == 11
     except Exception as e:
         assert isinstance(e, AttributeError)
         print('The value of dresses card is not accessible, even for correct values!')

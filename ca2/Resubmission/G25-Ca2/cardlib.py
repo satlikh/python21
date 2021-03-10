@@ -46,8 +46,10 @@ class PlayingCard(metaclass=abc.ABCMeta):
         Returns an object of the abstract class `PlayingCard`
         :param suit:
         """
-        self.suit = suit
-        # self.value = value
+        if isinstance(suit, Suit):
+            self.suit = suit
+        else:
+            raise ValueError('The suit must be an instance of Suit class!')
 
     def __lt__(self, other):
         """
@@ -108,7 +110,11 @@ class NumberedCard(PlayingCard):
         :returns: A `NumberedCard` object.
         :rtype: NumberedCard
         """
-        self.value = value
+        if value in range(2, 11) and isinstance(value, int):
+            self.value = value
+        else:
+            raise ValueError(f'Oops, the value shall be an integer in range [2,10] for numbered cards! '
+                             f'You entered {value}')
 
     def get_value(self):
         """
@@ -150,6 +156,7 @@ class JackCard(PlayingCard):
         :returns: A `JackCard` object.
         :rtype: JackCard
         """
+
         self.value = 11
 
     def get_value(self):
@@ -192,6 +199,7 @@ class QueenCard(PlayingCard):
         :returns: A `QueenCard` object.
         :rtype: QueenCard
         """
+
         self.value = 12
 
     def get_value(self):
@@ -234,6 +242,7 @@ class KingCard(PlayingCard):
         :returns: A `KingCard` object.
         :rtype: KingCard
         """
+
         self.value = 13
 
     def get_value(self):
@@ -576,14 +585,24 @@ class PokerHand:
         """
         unique, counts = np.unique(self.cards, return_counts=True)
         self._duplicate_values = []
-        if any(counts == 2) & any(counts == 3):
+        if any(counts == 4):
+            four_of_a_kind = unique[counts == 4]
+            self._duplicate_values = self.__cards_in_category(four_of_a_kind)
+            self.points = 8
+            self.hand_type = PokerHandType(8)
+        elif any(counts == 2) & any(counts == 3):
             self.points = 7
             self.hand_type = PokerHandType(7)
             full_house = [max(unique[counts == 2]), max(unique[counts == 3])]
             self._duplicate_values = self.__cards_in_category(full_house)
+        elif any(counts == 3):
+            three_of_a_kind = unique[counts == 3]
+            self._duplicate_values = self.__cards_in_category(three_of_a_kind)
+            self.points = 4
+            self.hand_type = PokerHandType(4)
         elif any(counts == 2):
             if len(counts[counts == 2]) > 1:
-                two_pair = unique[counts == 2]
+                two_pair = unique[counts == 2][-2:]
                 self._duplicate_values = self.__cards_in_category(two_pair)
                 self.points = 3
                 self.hand_type = PokerHandType(3)
@@ -592,16 +611,6 @@ class PokerHand:
                 self._duplicate_values = self.__cards_in_category(pair)
                 self.points = 2
                 self.hand_type = PokerHandType(2)
-        elif any(counts == 3):
-            three_of_a_kind = unique[counts == 3]
-            self._duplicate_values = self.__cards_in_category(three_of_a_kind)
-            self.points = 4
-            self.hand_type = PokerHandType(4)
-        elif any(counts == 4):
-            four_of_a_kind = unique[counts == 4]
-            self._duplicate_values = self.__cards_in_category(four_of_a_kind)
-            self.points = 8
-            self.hand_type = PokerHandType(8)
         else:
             self.points = 1
             self.hand_type = PokerHandType(1)
@@ -636,11 +645,11 @@ class PokerHand:
             straight_cards = self.cards.copy()
         cards = []
         # Change the value of the ace from 14 to 1 if there's a 2 for low straight
-        if (AceCard(Suit) in straight_cards) and (NumberedCard(2, Suit) in straight_cards):
-            suit_of_acecard = straight_cards[straight_cards.index(AceCard(Suit))].suit
+        if (AceCard(Suit.Spades) in straight_cards) and (NumberedCard(2, Suit.Spades) in straight_cards):
+            suit_of_acecard = straight_cards[straight_cards.index(AceCard(Suit.Spades))].suit
             cards.append(AceCard(suit_of_acecard, first=True))
             straight_cards.sort()
-            if KingCard(Suit) not in straight_cards:
+            if KingCard(Suit.Spades) not in straight_cards:
                 del (straight_cards[-1])  # removes AceCard with value 14
         cards.extend(straight_cards)
         # cards.sort()
@@ -674,10 +683,10 @@ class PokerHand:
         return cards_list
 
     def __str__(self):
-        return "Poker Hand [{}] with {}".format(self.cards, self.hand_type)
+        return "Poker Hand {} with {}".format(self.best_cards, self.hand_type.name)
 
     def __repr__(self):
-        return "Poker Hand [{}] with {}".format(self.cards, self.hand_type)
+        return "Poker Hand {} with {}".format(self.best_cards, self.hand_type)
 
 
 class StandardDeck:
